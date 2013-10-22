@@ -41,6 +41,9 @@ enum {
 int state=NONE;
 std::stack<bool> echo_stack;
 
+std::string python_rivit;
+
+
 bool inc_split(std::string& s) {
   bool ret=true;
   size_t pos;
@@ -150,9 +153,9 @@ char* python_block(const char* input,FILE* yyout) {
 
   len=-1;
 
-  fprintf(c_in,"%s\n",input+2);
+  fprintf(c_in,"%s",input);  
   g_io_channel_flush(c_in,NULL);
-
+  fprintf(stdout,"%s",input);
   bgetline(&r,&len,c_out,lokki,false);
 
   return r;
@@ -160,7 +163,7 @@ char* python_block(const char* input,FILE* yyout) {
 
 %}
 
-%Start STR
+%Start STR PYTHON
 
 %%
 
@@ -265,11 +268,22 @@ char* python_block(const char* input,FILE* yyout) {
   BEGIN 0;
 }
 
-^#\[[^\n]+ {
-  fprintf(yyout,"%s",python_block(yytext,yyout));
+^[\^<][^\n]* {
+  python_rivit+=std::string(yytext+2)+"\n";
 }
 
 [^\n] {
+  if (!python_rivit.empty()) {
+    //Laajennetaan pyyttonipätkä
+    char* ret=python_block(python_rivit.c_str(),yyout);
+    if (ret) {
+      printf("python palautti %s\n",ret);
+    } else {
+      printf("Pythonilta tuli NULL\n");
+    }
+    python_rivit.clear();
+  }
+
   if (echo)
      fprintf(yyout,"%c",  yytext[0]);
 }
