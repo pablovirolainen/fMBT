@@ -153,10 +153,18 @@ char* python_block(const char* input,FILE* yyout) {
 
   len=-1;
 
-  fprintf(c_in,"%s",input);  
+  char* tmp=escape_string(input);
+  fprintf(c_in,"%s\n",tmp);
+  escape_free(tmp);
   g_io_channel_flush(c_in,NULL);
   //fprintf(stdout,"%s",input);
   bgetline(&r,&len,c_out,lokki,false);
+
+  if (r) {
+    tmp=escape_string(r);
+    g_free(r);
+    r=tmp;
+  }
 
   return r;
 }
