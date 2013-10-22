@@ -161,9 +161,7 @@ char* python_block(const char* input,FILE* yyout) {
   bgetline(&r,&len,c_out,lokki,false);
 
   if (r) {
-    tmp=escape_string(r);
-    g_free(r);
-    r=tmp;
+    r=unescape_string(r);
   }
 
   return r;
