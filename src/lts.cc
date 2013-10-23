@@ -238,6 +238,19 @@ void Lts::add_transitions(int st,
 int Lts::execute(int action)
 {
   struct _state* st=&state[current_state];
+
+  /*
+  std::vector<int>::iterator first=actions.begin()+st->first;
+  std::vector<int>::iterator last=first+st->transitions;
+  
+  std::vector<int>::iterator j=std::lower_bound(first,last,action);
+
+  if (j!=last) {
+    current_state=dstate[j-actions.begin()];
+    return true;
+  }
+  */
+  /*
   
   for(int i=0;i<st->transitions;i++) {
     if (actions[st->first+i]==action) {
@@ -245,6 +258,32 @@ int Lts::execute(int action)
       return true;
     }
   }
+  */
+
+  int imin=st->first;
+  int imax=st->first+st->transitions-1;
+
+  // continue searching while [imin,imax] is not empty
+  while (imax >= imin)
+    {
+      // calculate the midpoint for roughly equal partition
+      int imid = imin + ((imax - imin) / 2);
+      // determine which subarray to search
+      if (actions[imid] < action) {
+        // change min index to search upper subarray
+        imin = imid + 1;
+      } else {
+	if (actions[imid] > action) {
+        // change max index to search lower subarray
+        imax = imid - 1;
+	} else {
+	  // action found at index imid
+	  current_state=dstate[imid];
+	  return true;
+	}
+      }
+    }
+  // action not found
   return false;
 }
 

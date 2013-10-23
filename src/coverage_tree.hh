@@ -131,6 +131,23 @@ public:
   long node_count;
   long max_count;
 protected:
+  static inline struct node* new_node() {
+    struct node* ret;
+    if (nodes_save.empty()) {
+      ret = new struct node;
+    } else {
+      ret=nodes_save.top();
+      nodes_save.pop();
+    }
+    return ret;
+  }
+
+  static inline void delete_node(struct node* n) {
+    nodes_save.push(n);
+    n->nodes.clear();
+  }
+  static std::stack<struct node*> nodes_save;
+
   bool have_filter;
   std::string params;
   std::vector<std::string> subs;
