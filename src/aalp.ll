@@ -274,7 +274,7 @@ char* python_block(const char* input,FILE* yyout) {
   BEGIN 0;
 }
 
-^[\^<][^\n]* {
+^^>([^\n]*) {
   if (python_rivit.empty()) {
     std::string fn=fstack.back()+":"+to_string(lineno);
     fprintf(yyout,"# 1 \"%s\"\x0A",fn.c_str(),fstack.size()+1);
