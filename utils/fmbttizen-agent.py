@@ -115,6 +115,8 @@ _ABS_MT_TRACKING_ID = 0x39
 # for pressing hardware keys.
 try: cpuinfo = file("/proc/cpuinfo").read()
 except: cpuinfo = ""
+try: devices = file("/proc/bus/input/devices").read()
+except: devices = ""
 
 if 'TRATS' in cpuinfo:
     # Running on Lunchbox
@@ -138,7 +140,17 @@ elif 'QEMU Virtual CPU' in cpuinfo:
     _inputKeyNameToCode["HOME"] = 139
     if iAmRoot:
         mtInputDevFd = os.open("/dev/input/event2", os.O_WRONLY | os.O_NONBLOCK)
-else:
+elif 'Synaptics_RMI4_touchkey' in devices:
+    # Running on Geek
+    hwKeyDevice = {
+        "POWER": "mid_powerbtn",
+        "VOLUMEUP": "gpio-keys",
+        "VOLUMEDOWN": "gpio-keys",
+        "HOME": "Synaptics_RMI4_touchkey"
+        }
+    if iAmRoot:
+        mtInputDevFd = os.open("/dev/input/event1", os.O_WRONLY | os.O_NONBLOCK)
+elif 'mxt224_key_0' in devices:
     # Running on Blackbay
     hwKeyDevice = {
         "POWER": "msic_power_btn",
@@ -148,10 +160,33 @@ else:
         }
     if iAmRoot:
         mtInputDevFd = os.open("/dev/input/event0", os.O_WRONLY | os.O_NONBLOCK)
+else:
+    # Unknown platform, guessing best possible defaults
+    _d = devices.split("\n\n")
+    try:
+        power_devname = re.findall('Name=\"([^"]*)\"', [i for i in _d if "power" in i.lower()][0])[0]
+    except IndexError:
+        power_devname = "gpio-keys"
+    try:
+        touch_device = "/dev/input/" + re.findall('[ =](event[0-9]+)\s',  [i for i in _d if "touch" in i.lower()][0])[0]
+    except IndexError:
+        try:
+            touch_device = "/dev/input/" + re.findall('[ =](event[0-9]+)\s',  [i for i in _d if "mouse0" in i.lower()][0])[0]
+        except IndexError:
+            touch_device = "/dev/input/event0"
+    hwKeyDevice = {
+        "POWER": power_devname,
+        "VOLUMEUP": "gpio-keys",
+        "VOLUMEDOWN": "gpio-keys",
+        "HOME": "gpio-keys"
+        }
+    if iAmRoot:
+        mtInputDevFd = os.open(touch_device, os.O_WRONLY | os.O_NONBLOCK)
+    del _d
 
 # Read input devices
 deviceToEventFile = {}
-for _l in file("/proc/bus/input/devices"):
+for _l in devices.splitlines():
     if _l.startswith('N: Name="'): _device = _l.split('"')[1]
     elif _l.startswith("H: Handlers=") and "event" in _l:
         try: deviceToEventFile[_device] = "/dev/input/" + re.findall("(event[0-9]+)", _l)[0]
@@ -224,7 +259,7 @@ def specialCharToXString(c):
     c2s = {'\n': "Return",
            ' ': "space", '!': "exclam", '"': "quotedbl",
            '#': "numbersign", '$': "dollar", '%': "percent",
-           '&': "ambersand", "'": "apostrophe",
+           '&': "ampersand", "'": "apostrophe",
            '(': "parenleft", ')': "parenright", '*': "asterisk",
            '+': "plus", '-': "minus", '.': "period", '/': "slash",
            ':': "colon", ';': "semicolon", '<': "less", '=': "equal",
@@ -491,6 +526,14 @@ if __name__ == "__main__":
                 except Exception, e: write_response(False, e)
             else:
                 write_response(*subAgentCommand("root", "tizen", cmd))
+        elif cmd.startswith("gd"):   # get display status
+            try:
+                p = subprocess.Popen(['/usr/bin/xset', 'q'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = p.communicate()
+                if "Monitor is Off" in out: write_response(True, "Off")
+                elif "Monitor is On" in out: write_response(True, "On")
+                else: write_response(False, err)
+            except Exception, e: write_response(False, e)
         elif cmd.startswith("tm "):   # touch move(x, y)
             xs, ys = cmd[3:].strip().split()
             libXtst.XTestFakeMotionEvent(display, current_screen, int(xs), int(ys), X_CurrentTime)
