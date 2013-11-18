@@ -91,6 +91,7 @@ import inspect
 import math
 import os
 import shutil
+import subprocess
 import sys
 import time
 import traceback
@@ -1102,7 +1103,7 @@ class _Paths(object):
 
 
 class GUITestInterface(object):
-    def __init__(self, ocrEngine=None, oirEngine=None):
+    def __init__(self, ocrEngine=None, oirEngine=None, rotateScreenshot=None):
         self._paths = _Paths("", "")
         self._conn = None
         self._lastScreenshot = None
@@ -1110,6 +1111,7 @@ class GUITestInterface(object):
         self._longTapHoldTime = 2.0
         self._ocrEngine = None
         self._oirEngine = None
+        self._rotateScreenshot = rotateScreenshot
 
         if ocrEngine == None:
             self.setOcrEngine(_defaultOcrEngine())
@@ -1210,7 +1212,8 @@ class GUITestInterface(object):
 
     def enableVisualLog(self, filenameOrObj,
                         screenshotWidth="240", thumbnailWidth="",
-                        timeFormat="%s.%f", delayedDrawing=False):
+                        timeFormat="%s.%f", delayedDrawing=False,
+                        copyBitmapsToScreenshotDir=False):
         """
         Start writing visual HTML log on this device object.
 
@@ -1238,6 +1241,11 @@ class GUITestInterface(object):
                   later execution. The value True can significantly
                   save test execution time and disk space. The default
                   is False.
+
+          copyBitmapsToScreenshotDir (boolean, optional)
+                  If True, every logged bitmap file will be copied to
+                  bitmaps directory in screenshotDir. The default is
+                  False.
         """
         if type(filenameOrObj) == str:
             try:
@@ -1255,7 +1263,8 @@ class GUITestInterface(object):
                 raise ValueError('Visual logging on file "%s" is already enabled' % (outFileObj.name,))
             else:
                 self._visualLogFilenames.add(outFileObj.name)
-        self._visualLog = _VisualLog(self, outFileObj, screenshotWidth, thumbnailWidth, timeFormat, delayedDrawing)
+        self._visualLog = _VisualLog(self, outFileObj, screenshotWidth, thumbnailWidth, timeFormat, delayedDrawing,
+                                     copyBitmapsToScreenshotDir)
 
     def intCoords(self, (x, y)):
         """
@@ -1306,9 +1315,8 @@ class GUITestInterface(object):
             return True
         return self._conn.sendPress(keyName)
 
-    def refreshScreenshot(self, forcedScreenshot=None):
-        """
-        Takes new screenshot and updates the latest screenshot object.
+    def refreshScreenshot(self, forcedScreenshot=None, rotate=None):
+        """Takes new screenshot and updates the latest screenshot object.
 
         Parameters:
 
@@ -1316,7 +1324,14 @@ class GUITestInterface(object):
                   use given screenshot object or image file, do not
                   take new screenshot.
 
-        Returns new latest Screenshot object.
+          rotate (integer, optional):
+                  rotate screenshot by given number of degrees. This
+                  overrides constructor rotateScreenshot parameter
+                  value. The default is None (no override).
+
+        Returns Screenshot object, and makes the same object "the
+        latest screenshot" that is used by all *Bitmap and *OcrText
+        methods.
         """
         if forcedScreenshot != None:
             if type(forcedScreenshot) == str:
@@ -1330,8 +1345,15 @@ class GUITestInterface(object):
         else:
             if self.screenshotDir() == None:
                 self.setScreenshotDir(self._screenshotDirDefault)
-            screenshotFile = self.screenshotDir() + os.sep + _filenameTimestamp() + "-" + self._conn.target() + '.png'
+            screenshotFile = os.path.join(
+                self.screenshotDir(),
+                _filenameTimestamp() + "-" + self._conn.target() + '.png')
             if self._conn.recvScreenshot(screenshotFile):
+                # New screenshot successfully received from device
+                if rotate == None:
+                    rotate = self._rotateScreenshot
+                if rotate != None and rotate != 0:
+                    subprocess.call(["convert", screenshotFile, "-rotate", str(rotate), screenshotFile])
                 self._lastScreenshot = Screenshot(
                     screenshotFile=screenshotFile,
                     paths = self._paths,
@@ -2049,7 +2071,8 @@ class GUIItem(object):
 class _VisualLog:
     def __init__(self, device, outFileObj,
                  screenshotWidth, thumbnailWidth,
-                 timeFormat, delayedDrawing):
+                 timeFormat, delayedDrawing,
+                 copyBitmapsToScreenshotDir):
         self._device = device
         self._outFileObj = outFileObj
         self._testStep = -1
@@ -2059,6 +2082,7 @@ class _VisualLog:
         self._screenshotWidth = screenshotWidth
         self._thumbnailWidth = thumbnailWidth
         self._timeFormat = timeFormat
+        self._copyBitmapsToScreenshotDir = copyBitmapsToScreenshotDir
         self._userFrameId = 0
         self._userFunction = ""
         self._userCallCount = 0
@@ -2256,7 +2280,30 @@ class _VisualLog:
     def findItemsByBitmapLogger(loggerSelf, origMethod, screenshotObj):
         def findItemsByBitmapWRAP(*args, **kwargs):
             bitmap = args[0]
-            loggerSelf.logCall(img=screenshotObj._paths.abspath(bitmap))
+            absPathBitmap = screenshotObj._paths.abspath(bitmap)
+            if loggerSelf._copyBitmapsToScreenshotDir:
+                screenshotDirBitmap = os.path.join(
+                    os.path.dirname(screenshotObj.filename()),
+                    "bitmaps",
+                    bitmap.lstrip(os.sep))
+                if not os.access(screenshotDirBitmap, os.R_OK):
+                    # bitmap is not yet copied under screenshotDir
+                    destDir = os.path.dirname(screenshotDirBitmap)
+                    if not os.access(destDir, os.W_OK):
+                        try:
+                            os.makedirs(destDir)
+                        except IOError:
+                            pass # cannot make dir / dir not writable
+                    try:
+                        shutil.copy(absPathBitmap, destDir)
+                        absPathBitmap = screenshotDirBitmap
+                    except IOError:
+                        pass # cannot copy bitmap
+
+                else:
+                    absPathBitmap = screenshotDirBitmap
+
+            loggerSelf.logCall(img=absPathBitmap)
             retval = loggerSelf.doCallLogException(origMethod, args, kwargs)
             if len(retval) == 0:
                 loggerSelf.logReturn("not found in", img=screenshotObj, tip=origMethod.func_name)
