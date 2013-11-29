@@ -32,6 +32,7 @@ import zlib
 import termios
 
 import fmbtuinput
+fmbtuinput.refreshDeviceInfo()
 
 if "--debug" in sys.argv:
     g_debug = True
@@ -322,11 +323,17 @@ if g_Xavailable:
 def read_cmd():
     return sys.stdin.readline().strip()
 
+def _encode(obj):
+    return base64.b64encode(cPickle.dumps(obj))
+
+def _decode(string):
+    return cPickle.loads(base64.b64decode(string))
+
 def write_response(ok, value):
     if ok: p = "FMBTAGENT OK "
     else: p = "FMBTAGENT ERROR "
     if not g_debug:
-        response = "%s%s\n" % (p, base64.b64encode(cPickle.dumps(value)))
+        response = "%s%s\n" % (p, _encode(value))
     else:
         response = "%s%s\n" % (p, value)
     sys.stdout.write(response)
@@ -366,7 +373,7 @@ def sendHwFingerDown(x, y, button):
 def sendHwFingerUp(x, y, button):
     try:
         if touch_device:
-            touch_device.releaseFinger(button, x, y)
+            touch_device.releaseFinger(button)
         else:
             mouse_button_device.move(x, y)
             mouse_button_device.release(button)
@@ -626,7 +633,10 @@ def westonTakeScreenshotRoot():
 westonTakeScreenshotRoot.ssFilename = None
 
 def takeScreenshotOnWeston():
-    rv, status = subAgentCommand("root", "tizen", "ss weston-root")
+    if iAmRoot:
+        rv, status = westonTakeScreenshotRoot()
+    else:
+        rv, status = subAgentCommand("root", "tizen", "ss weston-root")
     if rv == False:
         return rv, status
     return True, file("/tmp/screenshot.png").read()
@@ -771,9 +781,9 @@ def subAgentCommand(username, password, cmd):
     p.stdin.flush()
     answer = p.stdout.readline().rstrip()
     if answer.startswith("FMBTAGENT OK "):
-        return True, cPickle.loads(base64.b64decode(answer[len("FMBTAGENT OK "):]))
+        return True, _decode(answer[len("FMBTAGENT OK "):])
     else:
-        return False, cPickle.loads(base64.b64decode(answer[len("FMBTAGENT ERROR "):]))
+        return False, _decode(answer[len("FMBTAGENT ERROR "):])
 
 def closeSubAgents():
     for username in _subAgents:
@@ -796,8 +806,11 @@ if __name__ == "__main__":
         debug("X disabled")
         g_Xavailable = False
 
+    platformInfo = {}
+    platformInfo["input devices"] = fmbtuinput._g_deviceNames.keys()
+
     # Send version number, enter main loop
-    write_response(True, "0.0")
+    write_response(True, platformInfo)
     cmd = read_cmd()
     while cmd:
         if cmd.startswith("bl "): # set display backlight time
@@ -807,6 +820,21 @@ if __name__ == "__main__":
                     file("/opt/var/kdb/db/setting/lcd_backlight_normal","wb").write(struct.pack("ii",0x29,timeout))
                     write_response(True, None)
                 except Exception, e: write_response(False, e)
+            else:
+                write_response(*subAgentCommand("root", "tizen", cmd))
+        elif cmd.startswith("er "): # event recorder
+            if iAmRoot:
+                cmd, arg = cmd.split(" ", 1)
+                if arg.startswith("start "):
+                    filterOpts = _decode(arg.split()[1])
+                    fmbtuinput.startQueueingEvents(filterOpts)
+                    write_response(True, None)
+                elif arg == "stop":
+                    events = fmbtuinput.stopQueueingEvents()
+                    write_response(True, None)
+                elif arg == "fetch":
+                    events = fmbtuinput.fetchQueuedEvents()
+                    write_response(True, events)
             else:
                 write_response(*subAgentCommand("root", "tizen", cmd))
         elif cmd.startswith("gd"):   # get display status
@@ -874,17 +902,17 @@ if __name__ == "__main__":
             write_response(rv, msg)
         elif cmd.startswith("kt "): # send x events
             if g_Xavailable:
-                rv, skippedSymbols = typeSequence(cPickle.loads(base64.b64decode(cmd[3:])))
+                rv, skippedSymbols = typeSequence(_decode(cmd[3:]))
                 libX11.XFlush(display)
             elif iAmRoot:
-                rv, skippedSymbols = typeSequence(cPickle.loads(base64.b64decode(cmd[3:])),
+                rv, skippedSymbols = typeSequence(_decode(cmd[3:]),
                                                   delayBetweenChars=0.05)
             else:
                 rv, skippedSymbols = subAgentCommand("root", "tizen", cmd)
             write_response(rv, skippedSymbols)
         elif cmd.startswith("ml "): # send multitouch linear gesture
             if iAmRoot:
-                rv, _ = mtLinearGesture(*cPickle.loads(base64.b64decode(cmd[3:])))
+                rv, _ = mtLinearGesture(*_decode(cmd[3:]))
             else:
                 rv, _ = subAgentCommand("root", "tizen", cmd)
             write_response(rv, _)
@@ -921,12 +949,12 @@ if __name__ == "__main__":
                 rv, msg = subAgentCommand("root", "tizen", cmd)
             write_response(rv, msg)
         elif cmd.startswith("es "): # execute shell
-            shellCmd, username, password, asyncStatus, asyncOut, asyncError = cPickle.loads(base64.b64decode(cmd[3:]))
+            shellCmd, username, password, asyncStatus, asyncOut, asyncError = _decode(cmd[3:])
             if username == "":
                 rv, soe = shellSOE(shellCmd, asyncStatus, asyncOut, asyncError)
             else:
                 rv, soe = subAgentCommand(username, password,
-                    "es " + base64.b64encode(cPickle.dumps((shellCmd, "", "", asyncStatus, asyncOut, asyncError))))
+                    "es " + _encode((shellCmd, "", "", asyncStatus, asyncOut, asyncError)))
             write_response(rv, soe)
         elif cmd.startswith("quit"): # quit
             write_response(rv, True)

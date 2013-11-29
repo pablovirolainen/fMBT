@@ -33,11 +33,14 @@ Example: python fmbtuinput.py -p /dev/input/event*
 
 import array
 import fcntl
+import glob
 import os
 import platform
 import re
 import struct
+import thread
 import time
+import Queue
 
 # See /usr/include/linux/input.h
 eventTypes = {
@@ -557,21 +560,32 @@ def toButtonCode(buttonCodeOrName):
         buttonCode = buttonCodeOrName
     return buttonCode
 
-_g_devices = file("/proc/bus/input/devices").read().split("\n\n")
-_g_deviceNames = {}
-for d in _g_devices:
-    if d.strip() == "":
-        continue
-    _name = [line.split('"')[1] for line in d.split('\n')
-             if line.startswith('N: ')][0]
-    _g_deviceNames[_name] = ("/dev/input/" +
-                             re.findall('[ =](event[0-9]+)\s', d)[0])
+def refreshDeviceInfo():
+    global _g_devices
+    global _g_deviceNames
+    global _g_filenames
+    _g_devices = file("/proc/bus/input/devices").read().split("\n\n")
+    _g_deviceNames = {}
+    _g_filenames = {}
+    for d in _g_devices:
+        if d.strip() == "":
+            continue
+        _name = [line.split('"')[1] for line in d.split('\n')
+                 if line.startswith('N: ')][0]
+        _g_deviceNames[_name] = ("/dev/input/" +
+                                 re.findall('[ =](event[0-9]+)\s', d)[0])
+        _g_filenames[_g_deviceNames[_name]] = _name
 
 def toEventFilename(deviceName):
     return _g_deviceNames[deviceName]
 
+def toEventDeviceName(filename):
+    return _g_filenames[filename]
+
 class InputDevice(object):
     def __init__(self):
+        if not "_g_devices" in globals():
+            refreshDeviceInfo()
         self._fd = -1
         self._uidev = None
         self._created = False
@@ -969,19 +983,15 @@ class Touch(InputDevice):
 
     def moveFinger(self, finger, x, y):
         """Move a finger in current multitouch gesture"""
-        lastX, lastY = self._mtTracking[finger][2:4]
         self._sendSlot(finger)
         tx, ty = self._tXY(x, y)
-        if lastX != x:
-            if self._multiTouch:
-                self.send("EV_ABS", "ABS_MT_POSITION_X", tx)
-            self.send("EV_ABS", "ABS_X", tx)
-            self._mtTracking[finger][2] = x
-        if lastY != y:
-            if self._multiTouch:
-                self.send("EV_ABS", "ABS_MT_POSITION_Y", ty)
-            self.send("EV_ABS", "ABS_Y", ty)
-            self._mtTracking[finger][3] = y
+        if self._multiTouch:
+            self.send("EV_ABS", "ABS_MT_POSITION_X", tx)
+            self.send("EV_ABS", "ABS_MT_POSITION_Y", ty)
+        self.send("EV_ABS", "ABS_X", tx)
+        self.send("EV_ABS", "ABS_Y", ty)
+        self._mtTracking[finger][2] = x # last X
+        self._mtTracking[finger][3] = y # last Y
         self.sync()
 
 class Keyboard(InputDevice):
@@ -1044,6 +1054,98 @@ def eventToString(inputEvent):
         return "%8s.%s type: %4s (%5s), code: %5s (%15s) value: %8s" % \
             (tim, str(tus).zfill(6), typ, styp, cod, scod, val)
 
+def queueEventsFromFile(filename, queue, lock, filterOpts):
+    if isinstance(filterOpts, dict):
+        allowedTypes = set()
+        for t in filterOpts["type"]:
+            if isinstance(t, str):
+                allowedTypes.add(eventTypes[t])
+            else:
+                allowedTypes.add(t)
+    else:
+        allowedTypes = set(eventTypes.values())
+    fd = os.open(filename, os.O_RDONLY)
+    try:
+        while 1:
+            eventData = os.read(fd, sizeof_input_event)
+            if not lock.locked():
+                return
+            if not eventData:
+                break
+            ts_tus_typ_cod_val = struct.unpack(struct_input_event, eventData)
+            if ts_tus_typ_cod_val[2] in allowedTypes:
+                queue.put(ts_tus_typ_cod_val)
+    finally:
+        os.close(fd)
+
+# _g_recQL dictionary contains events being actively recorded
+# - key: filename, like "/dev/input/event0"
+# - value: (eventQueue, lock)
+# A thread is filling eventQueue with events from filename.
+# Once the lock is released, the thread will quit without writing
+# anything to the eventQueue anymore.
+_g_recQL = {}
+_g_unfetchedEvents = []
+def queueEventsFromFiles(listOfFilenames, filterOpts):
+    global _g_recQL
+    for filename in listOfFilenames:
+        q = Queue.Queue()
+        l = thread.allocate_lock()
+        l.acquire()
+        if filename in _g_recQL:
+            # previous reader thread should quit
+            _g_recQL[filename][1].release()
+        thread.start_new_thread(
+            queueEventsFromFile, (filename, q, l, filterOpts))
+        _g_recQL[filename] = (q, l)
+
+def startQueueingEvents(filterOpts):
+    refreshDeviceInfo()
+    if len(_g_recQL) > 0:
+        # already queueing, restart
+        stopQueueingEvents()
+    if "device" in filterOpts:
+        deviceFiles = []
+        for n in filterOpts["device"]:
+            if n in _g_deviceNames:
+                deviceFiles.append(_g_deviceNames[n])
+        del filterOpts["device"]
+    else:
+        deviceFiles = glob.glob("/dev/input/event[0-9]*")
+    queueEventsFromFiles(deviceFiles, filterOpts)
+
+def stopQueueingEvents():
+    global _g_recQL
+    global _g_unfetchedEvents
+    for filename in _g_recQL:
+        _g_recQL[filename][1].release()
+    _g_unfetchedEvents = fetchQueuedEvents()
+    _g_recQL = {}
+
+def fetchQueuedEvents():
+    global _g_unfetchedEvents
+    if len(_g_recQL) == 0: # no active recording
+        rv = _g_unfetchedEvents
+        _g_unfetchedEvents = []
+        return rv
+    else: # events are being recorded
+        events = []
+        for filename in _g_recQL:
+            events.extend(fetchQueuedEventsFromFile(filename))
+        return events
+
+def fetchQueuedEventsFromFile(filename):
+    events = []
+    q = _g_recQL[filename][0]
+    deviceName = toEventDeviceName(filename)
+    while 1:
+        try:
+            ts, tus, typ, cod, val = q.get_nowait()
+            events.append((deviceName, ts + tus/1000000.0, typ, cod, val))
+        except Queue.Empty:
+            break
+    return events
+
 def printEventsFromFile(filename):
     fd = os.open(filename, os.O_RDONLY)
 
@@ -1051,7 +1153,7 @@ def printEventsFromFile(filename):
 
     try:
         while 1:
-            inputEvent = os.read(fd, struct.calcsize(struct_input_event))
+            inputEvent = os.read(fd, sizeof_input_event)
             if not inputEvent:
                 break
             print sdev, eventToString(inputEvent)
@@ -1061,7 +1163,6 @@ def printEventsFromFile(filename):
 if __name__ == "__main__":
     import getopt
     import sys
-    import thread
 
     opt_print_devices = []
 

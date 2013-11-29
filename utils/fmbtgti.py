@@ -1177,6 +1177,7 @@ class GUITestInterface(object):
 
         delayBeforeMoves (float, optional):
                 seconds to wait after touching and before dragging.
+                If negative, starting touch event is not sent.
 
         delayBetweenMoves (float, optional):
                 seconds to wait when moving between points when
@@ -1185,6 +1186,7 @@ class GUITestInterface(object):
         delayAfterMoves (float, optional):
                 seconds to wait after dragging, before raising
                 fingertip.
+                If negative, fingertip is not raised.
 
         movePoints (integer, optional):
                 the number of intermediate move points between end
@@ -1194,7 +1196,9 @@ class GUITestInterface(object):
         """
         x1, y1 = self.intCoords((x1, y1))
         x2, y2 = self.intCoords((x2, y2))
-        if not self._conn.sendTouchDown(x1, y1): return False
+        if delayBeforeMoves >= 0:
+            if not self._conn.sendTouchDown(x1, y1):
+                return False
         if delayBeforeMoves > 0:
             time.sleep(delayBeforeMoves)
         else:
@@ -1207,8 +1211,13 @@ class GUITestInterface(object):
         if delayAfterMoves > 0:
             self._conn.sendTouchMove(x2, y2)
             time.sleep(delayAfterMoves)
-        if self._conn.sendTouchUp(x2, y2): return True
-        return False
+        if delayAfterMoves >= 0:
+            if self._conn.sendTouchUp(x2, y2):
+                return True
+            else:
+                return False
+        else:
+            return True
 
     def enableVisualLog(self, filenameOrObj,
                         screenshotWidth="240", thumbnailWidth="",
@@ -1265,6 +1274,12 @@ class GUITestInterface(object):
                 self._visualLogFilenames.add(outFileObj.name)
         self._visualLog = _VisualLog(self, outFileObj, screenshotWidth, thumbnailWidth, timeFormat, delayedDrawing,
                                      copyBitmapsToScreenshotDir)
+
+    def visualLog(self, *args):
+        """Writes parameters to the visual log, given that visual logging is
+        enabled.
+        """
+        pass
 
     def intCoords(self, (x, y)):
         """
@@ -2090,6 +2105,7 @@ class _VisualLog:
         device.refreshScreenshot = self.refreshScreenshotLogger(device.refreshScreenshot)
         device.tap = self.tapLogger(device.tap)
         device.drag = self.dragLogger(device.drag)
+        device.visualLog = self.messageLogger(device.visualLog)
         attrs = ['callContact', 'callNumber', 'close',
                  'loadConfig', 'platformVersion',
                  'pressAppSwitch', 'pressBack', 'pressHome',
@@ -2102,7 +2118,7 @@ class _VisualLog:
                  'tapBitmap', 'tapId', 'tapItem', 'tapOcrText',
                  'tapText', 'topApp', 'topWindow', 'type',
                  'verifyOcrText', 'verifyText', 'verifyBitmap',
-                  'waitAnyBitmap', 'waitBitmap', 'waitOcrText', 'waitText']
+                 'waitAnyBitmap', 'waitBitmap', 'waitOcrText', 'waitText']
         for a in attrs:
             if hasattr(device, a):
                 m = getattr(device, a)
@@ -2158,7 +2174,11 @@ class _VisualLog:
     def logCall(self, img=None, width="", imgTip=""):
         callee = inspect.currentframe().f_back.f_code.co_name[:-4] # cut "WRAP"
         argv = inspect.getargvalues(inspect.currentframe().f_back)
-        calleeArgs = str(argv.locals['args']) + " " + str(argv.locals['kwargs'])
+        # calleeArgs = str(argv.locals['args']) + " " + str(argv.locals['kwargs'])
+        args = [repr(a) for a in argv.locals['args']]
+        for key, value in argv.locals['kwargs'].iteritems():
+            args.append("%s=%s" % (key, repr(value)))
+        calleeArgs = "(%s)" % (", ".join(args),)
         callerFrame = inspect.currentframe().f_back.f_back
         callerFilename = callerFrame.f_code.co_filename
         callerLineno = callerFrame.f_lineno
@@ -2198,6 +2218,18 @@ class _VisualLog:
              </table></tr>\n''' % (self.htmlTimestamp(), cgi.escape(traceback.format_exception(*einfo)[-2].replace('"','').strip()), cgi.escape(str(traceback.format_exception_only(einfo[0], einfo[1])[0])))
         self.write(excHtml)
 
+    def logMessage(self, msg):
+        callerFrame = inspect.currentframe().f_back.f_back
+        callerFilename = callerFrame.f_code.co_filename
+        callerLineno = callerFrame.f_lineno
+        self.logBlock()
+        t = datetime.datetime.now()
+        msgHtml = '''
+            <tr><td></td><td><table>
+                <tr><td>%s</td><td><a title="%s:%s"><div class="message">%s</div></a></td></tr>
+            </table></td></tr>\n''' % (self.htmlTimestamp(t), cgi.escape(callerFilename), callerLineno, cgi.escape(msg))
+        self.write(msgHtml)
+
     def logHeader(self):
         self.write('''
             <!DOCTYPE html><html>
@@ -2231,6 +2263,13 @@ class _VisualLog:
             retval = loggerSelf.doCallLogException(origMethod, args, kwargs)
             loggerSelf.logReturn(retval, tip=origMethod.func_name)
             return retval
+        loggerSelf.changeCodeName(origMethodWRAP, origMethod.func_code.co_name + "WRAP")
+        return origMethodWRAP
+
+    def messageLogger(loggerSelf, origMethod):
+        def origMethodWRAP(*args, **kwargs):
+            loggerSelf.logMessage(" ".join([str(a) for a in args]))
+            return True
         loggerSelf.changeCodeName(origMethodWRAP, origMethod.func_code.co_name + "WRAP")
         return origMethodWRAP
 

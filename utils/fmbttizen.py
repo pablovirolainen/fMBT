@@ -493,6 +493,12 @@ def _forceCloseSdbProcesses():
         except: pass
 atexit.register(_forceCloseSdbProcesses)
 
+def _encode(obj):
+    return base64.b64encode(cPickle.dumps(obj))
+
+def _decode(string):
+    return cPickle.loads(base64.b64decode(string))
+
 class TizenDeviceConnection(fmbtgti.GUITestConnection):
     """
     TizenDeviceConnection copies _tizenAgent to Tizen device,
@@ -554,12 +560,15 @@ class TizenDeviceConnection(fmbtgti.GUITestConnection):
                     else:
                         raise TizenConnectionError('Executing "%s" failed: %s' % (' '.join(uploadCmd), err + " " + out))
         else: # using SSH
-            for src, dst in uploadFiles:
-                uploadCmd = self._loginCommand + ["cat", ">", dst]
-                p = subprocess.Popen(uploadCmd, shell=False, stdin=subprocess.PIPE)
-                p.stdin.write(file(src).read())
-                p.stdin.close()
-                p.wait()
+            if self._loginCommand:
+                for src, dst in uploadFiles:
+                    uploadCmd = self._loginCommand + ["cat", ">", dst]
+                    p = subprocess.Popen(uploadCmd, shell=False, stdin=subprocess.PIPE)
+                    p.stdin.write(file(src).read())
+                    p.stdin.close()
+                    p.wait()
+            else: # run locally without remote login, no upload
+                agentRemoteFilename = agentFilename
 
         # Launch agent, create persistent connection to it
         if self._useSdb:
@@ -585,11 +594,11 @@ class TizenDeviceConnection(fmbtgti.GUITestConnection):
         if self._useSdb:
             self._sdbShell.stdin.write("\r")
             try:
-                ok, version = self._agentCmd("python %s; exit" % (agentRemoteFilename,))
+                ok, self._platformInfo = self._agentCmd("python %s; exit" % (agentRemoteFilename,))
             except IOError:
                 raise TizenConnectionError('Connecting to a Tizen device/emulator with "sdb -s %s shell" failed.' % (self._serialNumber,))
         else: # using SSH
-            ok, version = self._agentCmd("")
+            ok, self._platformInfo = self._agentCmd("")
             pass # agent already started by remoteShellCmd
         return ok
 
@@ -626,9 +635,9 @@ class TizenDeviceConnection(fmbtgti.GUITestConnection):
                 if len(l) > 72: self._debugAgentFile.write("<1 %s...\n" % (l[:72],))
                 else: self._debugAgentFile.write("<1 %s\n" % (l,))
             if l.startswith(okLinePrefix):
-                return True, cPickle.loads(base64.b64decode(l[len(okLinePrefix):]))
+                return True, _decode(l[len(okLinePrefix):])
             elif l.startswith(errorLinePrefix):
-                return False, cPickle.loads(base64.b64decode(l[len(errorLinePrefix):]))
+                return False, _decode(l[len(errorLinePrefix):])
             else:
                 output.append(l)
                 pass
@@ -677,7 +686,7 @@ class TizenDeviceConnection(fmbtgti.GUITestConnection):
         return self._agentCmd("ku %s" % (keyName,))[0]
 
     def sendMtLinearGesture(self, *args):
-        return self._agentCmd("ml %s" % (base64.b64encode(cPickle.dumps(args))))[0]
+        return self._agentCmd("ml %s" % (_encode(args)))[0]
 
     def sendScreenshotRotation(self, angle):
         return self._agentCmd("sa %s" % (angle,))[0]
@@ -695,10 +704,31 @@ class TizenDeviceConnection(fmbtgti.GUITestConnection):
         return self._agentCmd("tu %s %s 1" % (x, y))[0]
 
     def sendType(self, string):
-        return self._agentCmd("kt %s" % (base64.b64encode(cPickle.dumps(string))))[0]
+        return self._agentCmd("kt %s" % (_encode(string)))[0]
 
     def sendDisplayBacklightTime(self, timeout):
         return self._agentCmd("bl %s" % (timeout,))[0]
+
+    def sendRecStart(self, devices=[]):
+        """Start recording events"""
+        filterOpts = {
+            "type": ["EV_SYN", "EV_KEY", "EV_REL", "EV_ABS"]
+            }
+        if devices:
+            filterOpts["device"] = devices
+        return self._agentCmd("er start %s" % (_encode(filterOpts,)))[0]
+
+    def sendRecStop(self):
+        """Stop recording events"""
+        return self._agentCmd("er stop")[0]
+
+    def recvRec(self):
+        """Receive recorded events"""
+        status, events = self._agentCmd("er fetch")
+        if status:
+            return events
+        else:
+            return None
 
     def recvDisplayStatus(self):
         status = self._agentCmd("gd")
@@ -741,9 +771,13 @@ class TizenDeviceConnection(fmbtgti.GUITestConnection):
         s, o = commands.getstatusoutput("sdb get-serialno")
         return o.splitlines()[-1]
 
+    def recvInputDevices(self):
+        return self._platformInfo["input devices"]
+
     def shellSOE(self, shellCommand, username, password, asyncStatus, asyncOut, asyncError):
-        _, (s, o, e) = self._agentCmd("es %s" % (base64.b64encode(cPickle.dumps(
-                        (shellCommand, username, password, asyncStatus, asyncOut, asyncError))),))
+        _, (s, o, e) = self._agentCmd(
+            "es %s" % (_encode((shellCommand, username, password, asyncStatus,
+                                asyncOut, asyncError)),))
         return s, o, e
 
     def target(self):
