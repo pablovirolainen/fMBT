@@ -179,7 +179,9 @@ elif 'Synaptics_RMI4_touchkey' in devices:
         "POWER": "mid_powerbtn",
         "VOLUMEUP": "gpio-keys",
         "VOLUMEDOWN": "gpio-keys",
-        "HOME": "Synaptics_RMI4_touchkey"
+        "HOME": "Synaptics_RMI4_touchkey",
+        "BACK": "Synaptics_RMI4_touchkey",
+        "MENU": "Synaptics_RMI4_touchkey"
         }
     if iAmRoot:
         touch_device = fmbtuinput.Touch().open("/dev/input/event1")
@@ -382,6 +384,9 @@ def sendHwFingerUp(x, y, button):
         return False, str(e)
 
 def sendHwKey(keyName, delayBeforePress, delayBeforeRelease):
+    if keyName.startswith("KEY_"):
+        keyName = keyName.lstrip("KEY_")
+    keyName = keyName.upper()
     fd = None
     closeFd = False
     try: inputDevice = deviceToEventFile[hwKeyDevice[keyName]]
@@ -827,6 +832,8 @@ if __name__ == "__main__":
                 cmd, arg = cmd.split(" ", 1)
                 if arg.startswith("start "):
                     filterOpts = _decode(arg.split()[1])
+                    if touch_device:
+                        filterOpts["touchScreen"] = touch_device
                     fmbtuinput.startQueueingEvents(filterOpts)
                     write_response(True, None)
                 elif arg == "stop":

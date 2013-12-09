@@ -124,7 +124,7 @@ def _takeDragArgs(d):
                       "delayAfterMoves", "movePoints"), d)
 
 def _takeTapArgs(d):
-    return _takeArgs(("tapPos", "long", "hold",), d)
+    return _takeArgs(("tapPos", "long", "hold", "count", "delayBetweenTaps"), d)
 
 def _takeWaitArgs(d):
     return _takeArgs(("waitTime", "pollDelay"), d)
@@ -410,9 +410,12 @@ class OcrEngine(OrEngine):
                   engine default.
         """
         if screenshot == None:
-            self._findTextDefaults = defaults
+            self._findTextDefaults.update(defaults)
         else:
-            self._ssFindTextDefaults[id(screenshot)] = defaults
+            ssid = id(screenshot)
+            if not ssid in self._ssFindTextDefaults:
+                self._ssFindTextDefaults[ssid] = self._findTextDefaults.copy()
+            self._ssFindTextDefaults[ssid].update(defaults)
 
     def findTextDefaults(self, screenshot=None):
         if screenshot == None:
@@ -535,14 +538,21 @@ class _EyenfingerOcrEngine(OcrEngine):
 
         for ppfilter in self._ss[ssId].words.keys():
             try:
-                eyenfinger._g_words = self._ss[ssId].words[ppfilter]
-                (score, word), bbox = eyenfinger.iVerifyWord(text, match=match)
-                break
+                score_text_bbox_list = eyenfinger.findText(
+                    text, self._ss[ssId].words[ppfilter], match=match)
+                if not score_text_bbox_list:
+                    continue
+                else:
+                    break
             except eyenfinger.BadMatch:
                 continue
         else:
             return []
-        return [GUIItem("OCR word", bbox, self._ss[ssId].filename, ocrFind=text, ocrFound=word)]
+        retval = [GUIItem("OCR text (match %.2f)" % (score,),
+                          bbox, self._ss[ssId].filename,
+                          ocrFind=text, ocrFound=matching_text)
+                  for score, matching_text, bbox in score_text_bbox_list]
+        return retval
 
     def _dumpOcr(self, screenshot, match=None, preprocess=None, area=None, pagesegmodes=None):
         ssId = id(screenshot)
@@ -683,9 +693,12 @@ class OirEngine(OrEngine):
                   engine default.
         """
         if screenshot == None:
-            self._findBitmapDefaults = defaults
+            self._findBitmapDefaults.update(defaults)
         else:
-            self._ssFindBitmapDefaults[id(screenshot)] = defaults
+            ssid = id(screenshot)
+            if not ssid in self._ssFindBitmapDefaults:
+                self._ssFindBitmapDefaults[ssid] = self._findBitmapDefaults.copy()
+            self._ssFindBitmapDefaults[ssid].update(defaults)
 
     def findBitmapDefaults(self, screenshot=None):
         if screenshot == None:
@@ -1631,7 +1644,7 @@ class GUITestInterface(object):
             return False
         return self.swipeItem(items[0], direction, distance, **dragArgs)
 
-    def tap(self, (x, y), long=False, hold=0.0):
+    def tap(self, (x, y), long=False, hold=0.0, count=1, delayBetweenTaps=0.175):
         """
         Tap screen on coordinates (x, y).
 
@@ -1642,6 +1655,13 @@ class GUITestInterface(object):
                   scaled to full screen width and height, others are
                   handled as absolute coordinate values.
 
+          count (integer, optional):
+                  number of taps to the coordinates. The default is 1.
+
+          delayBetweenTaps (float, optional):
+                  time (seconds) between taps when count > 1.
+                  The default is 0.175 (175 ms).
+
           long (boolean, optional):
                   if True, touch the screen for a long time.
 
@@ -1651,18 +1671,24 @@ class GUITestInterface(object):
         Returns True if successful, otherwise False.
         """
         x, y = self.intCoords((x, y))
+        count = int(count)
         if long and hold == 0.0:
             hold = self._longTapHoldTime
-        if hold > 0.0:
-            try:
-                assert self._conn.sendTouchDown(x, y)
-                time.sleep(hold)
-                assert self._conn.sendTouchUp(x, y)
-            except AssertionError:
-                return False
-            return True
-        else:
-            return self._conn.sendTap(x, y)
+        if count == 0:
+            self._conn.sendTouchMove(x, y)
+        while count > 0:
+            if hold > 0.0:
+                try:
+                    assert self._conn.sendTouchDown(x, y)
+                    time.sleep(hold)
+                    assert self._conn.sendTouchUp(x, y)
+                except AssertionError:
+                    return False
+            else:
+                if not self._conn.sendTap(x, y):
+                    return False
+            count = int(count) - 1
+        return True
 
     def tapBitmap(self, bitmap, **tapAndOirArgs):
         """
@@ -1679,7 +1705,7 @@ class GUITestInterface(object):
           tapPos (pair of floats (x,y)):
                   refer to tapItem documentation.
 
-          long, hold (optional):
+          long, hold, count, delayBetweenTaps (optional):
                   refer to tap documentation.
 
         Returns True if successful, otherwise False.
@@ -1710,7 +1736,7 @@ class GUITestInterface(object):
                   (1.0, 1.0) is the lower-right corner.
                   Values < 0 and > 1 tap coordinates outside the item.
 
-          long, hold (optional):
+          long, hold, count, delayBetweenTaps (optional):
                   refer to tap documentation.
         """
         if "tapPos" in tapArgs:
@@ -1723,7 +1749,7 @@ class GUITestInterface(object):
             tapCoords = viewItem.coords()
         return self.tap(tapCoords, **tapArgs)
 
-    def tapOcrText(self, text, **tapAndOcrArgs):
+    def tapOcrText(self, text, appearance=0, **tapAndOcrArgs):
         """
         Find text from the latest screenshot using OCR, and tap it.
 
@@ -1732,7 +1758,7 @@ class GUITestInterface(object):
           text (string):
                   the text to be tapped.
 
-          long, hold (optional):
+          long, hold, count, delayBetweenTaps (optional):
                   refer to tap documentation.
 
           OCR engine specific arguments
@@ -1744,8 +1770,9 @@ class GUITestInterface(object):
         tapArgs, rest = _takeTapArgs(tapAndOcrArgs)
         ocrArgs, _ = _takeOcrArgs(self._lastScreenshot, rest, thatsAll=True)
         items = self._lastScreenshot.findItemsByOcr(text, **ocrArgs)
-        if len(items) == 0: return False
-        return self.tapItem(items[0], **tapArgs)
+        if len(items) <= appearance:
+            return False
+        return self.tapItem(items[appearance], **tapArgs)
 
     def type(self, text):
         """
@@ -2367,6 +2394,8 @@ class _VisualLog:
                 screenshotFilename = screenshotObj.filename()
                 highlightFilename = loggerSelf.highlightFilename(screenshotFilename)
                 eyenfinger.drawIcon(screenshotFilename, highlightFilename, args[0], foundItem.bbox())
+                for appearance, foundItem in enumerate(retval[1:42]):
+                    eyenfinger.drawIcon(highlightFilename, highlightFilename, str(appearance+1) + ": " + args[0], foundItem.bbox())
                 loggerSelf.logReturn([str(retval[0])], img=highlightFilename, width=loggerSelf._screenshotWidth, tip=origMethod.func_name, imgTip=screenshotObj._logCallReturnValue)
             return retval
         return findItemsByOcrWRAP
