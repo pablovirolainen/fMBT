@@ -29,8 +29,10 @@ import getopt
 import math
 import os
 import parser
+import pydoc
 import re
 import shutil
+import string
 import sys
 import time
 import traceback
@@ -490,7 +492,7 @@ class MainWindow(QtGui.QMainWindow):
         self._hwRecFilter = {"devices": None}
         self._recordedHandledAbsXY = (None, None)
         self._screenshotSaveDir = ""
-        self._fmbtEnv = {}
+        self._fmbtEnv = {"pydoc": pydoc}
         self._bitmapFileFormats = ["Portable network graphics (*.png)",
                                    "All files (*.*)"]
         self._scriptFileFormats = ["Python scripts (*.py)",
@@ -499,6 +501,13 @@ class MainWindow(QtGui.QMainWindow):
         self._selectingBitmapSaveDir = None
         self._settingsDialog = None
         self._sut = None
+
+        self.status = QtGui.QLabel("", self)
+        self.statusBar().setStyleSheet("""
+        QStatusBar::item { border: 0px }
+        QStatusBar QLabel { padding-left: 11px }""")
+        self.status.setFrameStyle(QtGui.QFrame.NoFrame)
+        self.statusBar().addPermanentWidget(self.status, stretch=1)
 
         self.setScriptFilename(None)
 
@@ -714,6 +723,8 @@ class MainWindow(QtGui.QMainWindow):
         editMenu = QtGui.QMenu("&Edit", self)
         self.menuBar().addMenu(editMenu)
         editMenu.addAction("&Find", self.showFindDialog, "Ctrl+F")
+        editMenu.addAction("&Goto line", self.showGotoLineDialog, "Ctrl+G")
+        editMenu.addSeparator()
         editMenu.addAction("&Settings", self.showSettingsDialog)
 
         viewMenu = QtGui.QMenu("&View", self)
@@ -764,6 +775,10 @@ class MainWindow(QtGui.QMainWindow):
                                                    checkable=True)
         screenshotMenu.addAction(self.screenshotAutoRefresh)
         self.screenshotAutoRefresh.changed.connect(self.autoRefreshScreenshot)
+
+        helpMenu = QtGui.QMenu("&Help", self)
+        self.menuBar().addMenu(helpMenu)
+        helpMenu.addAction("&Help on object", self.showHelpOnObject, "F1")
 
         self.gestureEvents = []
         self.gestureStarted = False
@@ -1631,6 +1646,12 @@ class MainWindow(QtGui.QMainWindow):
             self._editorIndentLineCalls = None
             self.highlightActiveBitmap()
         self._editorIgnoreNextCursorPositionChange = False
+        cursor = self.editor.textCursor()
+        cursorPosString = "%s, line: %s col: %s" % (
+            self._scriptFilename,
+            cursor.blockNumber() + 1,
+            cursor.positionInBlock() + 1)
+        self.status.setText(cursorPosString)
 
     def controlDevice(self):
         if self.screenshotButtonControl.isChecked():
@@ -1873,6 +1894,53 @@ class MainWindow(QtGui.QMainWindow):
             self._findDialog.exec_()
             self.editorClearBackground()
             self.consoleClearBackground()
+
+    def showGotoLineDialog(self):
+        currentLine = self.editor.textCursor().blockNumber() + 1
+        choice, ok = QtGui.QInputDialog.getText(
+            self, "Goto line", "Goto line number",
+            text=str(currentLine))
+        if ok:
+            try:
+                lineNumber = int(choice)
+            except ValueError:
+                log('invalid line number: "%s"' % (choice,))
+                return False
+            self.gotoLine(lineNumber)
+
+    def showHelpOnObject(self):
+        if not self.editor.hasFocus():
+            log("text cursor is not on object in the editor")
+            return
+        okChars = set(string.ascii_letters + string.digits + "._")
+        cursor = self.editor.textCursor()
+        pos = cursor.positionInBlock()
+        cursor.movePosition(QtGui.QTextCursor.EndOfWord,
+                            QtGui.QTextCursor.MoveAnchor)
+        cursor.movePosition(QtGui.QTextCursor.StartOfWord,
+                            QtGui.QTextCursor.KeepAnchor)
+        word = cursor.selectedText()
+        while cursor.movePosition(QtGui.QTextCursor.WordLeft,
+                                  QtGui.QTextCursor.KeepAnchor):
+            newWord = cursor.selectedText()
+            notOk = [c for c in newWord if not c in okChars]
+            if notOk:
+                break
+            word = newWord
+        helpText, exc = self._fmbtEval("pydoc.plain(pydoc.render_doc(%s))" % (word,), silent=True)
+        if exc == None:
+            log(helpText.rstrip())
+        else:
+            log('no help on "%s"' % (word,))
+
+    def gotoLine(self, lineNumber):
+        cursor = self.editor.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.Start)
+        if lineNumber > 1:
+            cursor.movePosition(QtGui.QTextCursor.Down,
+                                QtGui.QTextCursor.MoveAnchor,
+                                lineNumber-1)
+        self.editor.setTextCursor(cursor)
 
     def setScreenshotSaveDir(self, directory):
         try:
