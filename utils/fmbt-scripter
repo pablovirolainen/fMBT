@@ -242,6 +242,8 @@ class MyScaleEvents(QtCore.QObject):
         wS = self.attrowner.wheel_scale
         screenWidth = self.mainwindow.screenshotImage.width()
         screenHeight = self.mainwindow.screenshotImage.height()
+        if screenWidth == 0 or screenHeight == 0:
+            return (None, None)
         x = (pos().x() + sbX) / wS / float(screenWidth)
         y = (pos().y() + sbY) / wS / float(screenHeight)
         return (x, y)
@@ -253,6 +255,13 @@ class MyScaleEvents(QtCore.QObject):
         y = (pos().y() + sbY) / wS
         return (x, y)
     def eventToAPI(self, event):
+        if (event.type() == QtCore.QEvent.Wheel
+            and event.modifiers() == QtCore.Qt.ControlModifier):
+            coefficient = 1.0 + event.delta() / 1440.0
+            self.changeScale(coefficient)
+            return False
+        elif self.mainwindow.screenshotImageIndex == None:
+            return False
         if event.type() == QtCore.QEvent.MouseMove:
             if self.mainwindow.gestureStarted:
                 self.mainwindow.gestureEvents.append(
@@ -313,11 +322,6 @@ class MyScaleEvents(QtCore.QObject):
                                                 filename,))
                 self.visibleTip = filepath
             return True
-
-        if (event.type() == QtCore.QEvent.Wheel
-            and event.modifiers() == QtCore.Qt.ControlModifier):
-            coefficient = 1.0 + event.delta() / 1440.0
-            self.changeScale(coefficient)
         return False
 
 class fmbtdummy(object):
@@ -528,6 +532,8 @@ class MainWindow(QtGui.QMainWindow):
         self.screenshotWidgets.setLayout(self.screenshotWidgetsLayout)
 
         self.screenshotButtons = QtGui.QWidget(self.screenshotWidgets)
+        self.screenshotButtons.setSizePolicy(QtGui.QSizePolicy.Policy.Expanding,
+                                             QtGui.QSizePolicy.Policy.Fixed)
         self.screenshotButtonsL = QtGui.QHBoxLayout()
         self.screenshotButtons.setLayout(self.screenshotButtonsL)
 
@@ -645,6 +651,9 @@ class MainWindow(QtGui.QMainWindow):
 
         self.editorButtons = QtGui.QWidget(self.editorWidgets)
         self.editorButtons.setContentsMargins(-5, 0, -5, 0)
+        self.editorButtons.setSizePolicy(QtGui.QSizePolicy.Policy.Expanding,
+                                         QtGui.QSizePolicy.Policy.Fixed)
+
         self.editorButtonsLayout = QtGui.QHBoxLayout()
         self.editorButtons.setLayout(self.editorButtonsLayout)
 
@@ -737,6 +746,8 @@ class MainWindow(QtGui.QMainWindow):
                            "Ctrl+.")
         viewMenu.addAction("Zoom out screenshot", self.zoomOutScreenshot,
                            "Ctrl+,")
+        viewMenu.addSeparator()
+        viewMenu.addAction("Change console location", self.showConsole)
 
         bitmapMenu = QtGui.QMenu("&Bitmap", self)
         self.menuBar().addMenu(bitmapMenu)
@@ -1396,6 +1407,8 @@ class MainWindow(QtGui.QMainWindow):
         return True
 
     def screenshotShowLatest(self):
+        if not self._sut:
+            return
         latest = self._fmbtEval("%s.screenshot().filename()" % (self._sut,))[0]
         if (self._screenshotFilenames[self.screenshotImageIndex] != latest):
             self._screenshotFilenames.append(latest)
@@ -1932,6 +1945,14 @@ class MainWindow(QtGui.QMainWindow):
             log(helpText.rstrip())
         else:
             log('no help on "%s"' % (word,))
+
+    def showConsole(self):
+        s = self.editorCombo.size()
+        if (self.editorCombo.orientation() ==
+            QtCore.Qt.Orientation.Horizontal):
+            self.editorCombo.setOrientation(QtCore.Qt.Vertical)
+        else:
+            self.editorCombo.setOrientation(QtCore.Qt.Horizontal)
 
     def gotoLine(self, lineNumber):
         cursor = self.editor.textCursor()
