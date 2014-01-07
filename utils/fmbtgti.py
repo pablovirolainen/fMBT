@@ -116,8 +116,10 @@ _g_oirEngines = []
 def _fmbtLog(msg):
     fmbt.fmbtlog("fmbtgti: %s" % (msg,))
 
-def _filenameTimestamp():
-    return datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+def _filenameTimestamp(t=None):
+    if t == None:
+        t = datetime.datetime.now()
+    return t.strftime("%Y%m%d-%H%M%S-%f")
 
 def _takeDragArgs(d):
     return _takeArgs(("startPos", "delayBeforeMoves", "delayBetweenMoves",
@@ -1125,7 +1127,9 @@ class GUITestInterface(object):
         self._ocrEngine = None
         self._oirEngine = None
         self._rotateScreenshot = rotateScreenshot
+        self._screenshotLimit = None
         self._screenshotRefCount = {} # filename -> Screenshot object ref count
+        self._screenshotArchiveMethod = "remove"
 
         if ocrEngine == None:
             self.setOcrEngine(_defaultOcrEngine())
@@ -1145,6 +1149,8 @@ class GUITestInterface(object):
 
         self._screenshotDir = None
         self._screenshotDirDefault = "screenshots"
+        self._screenshotSubdir = None
+        self._screenshotSubdirDefault = ""
         self._screenSize = None
         self._visualLog = None
         self._visualLogFileObj = None
@@ -1236,8 +1242,7 @@ class GUITestInterface(object):
     def enableVisualLog(self, filenameOrObj,
                         screenshotWidth="240", thumbnailWidth="",
                         timeFormat="%s.%f", delayedDrawing=False,
-                        copyBitmapsToScreenshotDir=False,
-                        screenshotLimit=-1):
+                        copyBitmapsToScreenshotDir=False):
         """
         Start writing visual HTML log on this device object.
 
@@ -1270,13 +1275,6 @@ class GUITestInterface(object):
                   If True, every logged bitmap file will be copied to
                   bitmaps directory in screenshotDir. The default is
                   False.
-
-          screenshotLimit (integer, optional)
-                  Keep at most given number of latest screenshots,
-                  remove older screenshot files from the disk. This
-                  may result in broken img links in visual log HTML,
-                  but it may save a lot of disk space. The default is
-                  -1 (no limit).
         """
         if type(filenameOrObj) == str:
             try:
@@ -1296,8 +1294,7 @@ class GUITestInterface(object):
                 self._visualLogFilenames.add(outFileObj.name)
         self._visualLog = _VisualLog(self, outFileObj, screenshotWidth,
                                      thumbnailWidth, timeFormat, delayedDrawing,
-                                     copyBitmapsToScreenshotDir,
-                                     screenshotLimit, self._screenshotRefCount)
+                                     copyBitmapsToScreenshotDir)
 
     def visualLog(self, *args):
         """Writes parameters to the visual log, given that visual logging is
@@ -1354,8 +1351,64 @@ class GUITestInterface(object):
             return True
         return self._conn.sendPress(keyName)
 
+    def _newScreenshotFilepath(self):
+        """
+        Returns path and filename for next screenshot file.
+        Makes sure the file can be written (necessary directory
+        structure exists).
+        """
+        t = datetime.datetime.now()
+        filename = _filenameTimestamp(t) + "-" + self._conn.target() + ".png"
+        filepath = os.path.join(self.screenshotDir(),
+                                t.strftime(self.screenshotSubdir()),
+                                filename)
+        necessaryDirs = os.path.dirname(filepath)
+        if necessaryDirs and not os.path.isdir(necessaryDirs):
+            try:
+                os.makedirs(necessaryDirs)
+            except Exception, e:
+                _fmbtLog('creating directory "%s" for screenshots failed: %s' %
+                         (necessaryDirs, e))
+                raise
+        return filepath
+
+    def _archiveScreenshot(self, filepath):
+        if self._screenshotArchiveMethod == "remove":
+            try:
+                os.remove(filepath)
+            except IOError:
+                pass
+        elif self._screenshotArchiveMethod.startswith("resize"):
+            if self._screenshotArchiveMethod == "resize":
+                convertArgs = ["-resize",
+                               "%sx" % (int(self.screenSize()[0]) / 4,)]
+            else:
+                widthHeight = self._screenshotArchiveMethod.split()[1]
+                convertArgs = ["-resize", widthHeight]
+            subprocess.call(["convert", filepath] + convertArgs + [filepath])
+
+    def _archiveScreenshots(self):
+        """
+        Archive screenshot files if screenshotLimit has been exceeded.
+        """
+        freeScreenshots = [filename
+                           for (filename, refCount) in self._screenshotRefCount.iteritems()
+                           if refCount == 0]
+        archiveCount = len(freeScreenshots) - self._screenshotLimit
+        if archiveCount > 0:
+            freeScreenshots.sort(reverse=True) # archive oldest
+            while archiveCount > 0:
+                toBeArchived = freeScreenshots.pop()
+                try:
+                    self._archiveScreenshot(toBeArchived)
+                except IOError:
+                    pass
+                del self._screenshotRefCount[toBeArchived]
+                archiveCount -= 1
+
     def refreshScreenshot(self, forcedScreenshot=None, rotate=None):
-        """Takes new screenshot and updates the latest screenshot object.
+        """
+        Takes new screenshot and updates the latest screenshot object.
 
         Parameters:
 
@@ -1385,9 +1438,9 @@ class GUITestInterface(object):
         else:
             if self.screenshotDir() == None:
                 self.setScreenshotDir(self._screenshotDirDefault)
-            screenshotFile = os.path.join(
-                self.screenshotDir(),
-                _filenameTimestamp() + "-" + self._conn.target() + '.png')
+            if self.screenshotSubdir() == None:
+                self.setScreenshotSubdir(self._screenshotSubdirDefault)
+            screenshotFile = self._newScreenshotFilepath()
             if self._conn.recvScreenshot(screenshotFile):
                 # New screenshot successfully received from device
                 if rotate == None:
@@ -1416,6 +1469,11 @@ class GUITestInterface(object):
         del gc.garbage[:]
         gc.collect()
 
+        # If screenshotLimit has been set, archive old screenshot
+        # stored on the disk.
+        if self._screenshotLimit != None and self._screenshotLimit >= 0:
+            self._archiveScreenshots()
+
         return self._lastScreenshot
 
     def screenshot(self):
@@ -1426,8 +1484,30 @@ class GUITestInterface(object):
         """
         return self._lastScreenshot
 
+    def screenshotArchiveMethod(self):
+        """
+        Returns how screenshots exceeding screenshotLimit are archived.
+        """
+        return self._screenshotArchiveMethod
+
     def screenshotDir(self):
+        """
+        Returns the directory under which new screenshots are saved.
+        """
         return self._screenshotDir
+
+    def screenshotLimit(self):
+        """
+        Returns the limit after which unused screenshots are archived.
+        """
+        return self._screenshotLimit
+
+    def screenshotSubdir(self):
+        """
+        Returns the subdirectory in screenshotDir under which new
+        screenshots are stored.
+        """
+        return self._screenshotSubdir
 
     def screenSize(self):
         """
@@ -1501,6 +1581,36 @@ class GUITestInterface(object):
         self._oirEngine = oirEngine
         return prevDefault
 
+    def setScreenshotArchiveMethod(self, screenshotArchiveMethod):
+        """
+        Set method for archiving screenshots when screenshotLimit is exceeded.
+
+        Parameters:
+          screenshotArchiveMethod (string)
+                  Supported methods are "resize [WxH]" and "remove"
+                  where W and H are integers that define maximum width and
+                  height for an archived screenshot.
+                  The default method is "remove".
+        """
+        if screenshotArchiveMethod == "remove":
+            pass
+        elif screenshotArchiveMethod == "resize":
+            pass
+        elif screenshotArchiveMethod.startswith("resize"):
+            try:
+                w, h = screenshotArchiveMethod.split(" ")[1].split("x")
+            except:
+                raise ValueError("Invalid resize syntax")
+            try:
+                w, h = int(w), int(h)
+            except:
+                raise ValueError(
+                    "Invalid resize width or height, integer expected")
+        else:
+            raise ValueError('Unknown archive method "%s"' %
+                             (screenshotArchiveMethod,))
+        self._screenshotArchiveMethod = screenshotArchiveMethod
+
     def setScreenshotDir(self, screenshotDir):
         self._screenshotDir = screenshotDir
         if not os.path.isdir(self.screenshotDir()):
@@ -1509,6 +1619,44 @@ class GUITestInterface(object):
             except Exception, e:
                 _fmbtLog('creating directory "%s" for screenshots failed: %s' % (self.screenshotDir(), e))
                 raise
+
+    def setScreenshotLimit(self, screenshotLimit):
+        """
+        Set maximum number for unarchived screenshots.
+
+        Parameters:
+          screenshotLimit (integer)
+                  Maximum number of unarchived screenshots that are
+                  free for archiving (that is, not referenced by test code).
+                  The default is None, that is, there is no limit and
+                  screenshots are never archived.
+
+        See also:
+          setScreenshotArchiveMethod()
+        """
+        self._screenshotLimit = screenshotLimit
+
+    def setScreenshotSubdir(self, screenshotSubdir):
+        """
+        Define a subdirectory under screenshotDir() for screenshot files.
+
+        Parameters:
+
+          screenshotSubdir (string)
+                  Name of a subdirectory. The name should contain
+                  conversion specifiers supported by strftime.
+
+        Example:
+
+          sut.setScreenshotSubdir("%m-%d-%H")
+                  A screenshot taken on June 20th at 4.30pm will
+                  be stored to screenshotDir/01-20-16. That is,
+                  screenshots taken on different hours will be
+                  stored to different subdirectories.
+
+        By default, all screenshots are stored directly to screenshotDir().
+        """
+        self._screenshotSubdir = screenshotSubdir
 
     def swipe(self, (x, y), direction, distance=1.0, **dragArgs):
         """
@@ -2134,8 +2282,7 @@ class _VisualLog:
     def __init__(self, device, outFileObj,
                  screenshotWidth, thumbnailWidth,
                  timeFormat, delayedDrawing,
-                 copyBitmapsToScreenshotDir, screenshotLimit,
-                 screenshotRefCount):
+                 copyBitmapsToScreenshotDir):
         self._device = device
         self._outFileObj = outFileObj
         self._testStep = -1
@@ -2146,8 +2293,6 @@ class _VisualLog:
         self._thumbnailWidth = thumbnailWidth
         self._timeFormat = timeFormat
         self._copyBitmapsToScreenshotDir = copyBitmapsToScreenshotDir
-        self._screenshotLimit = screenshotLimit
-        self._screenshotRefCount = screenshotRefCount
         self._userFrameId = 0
         self._userFunction = ""
         self._userCallCount = 0
@@ -2186,22 +2331,6 @@ class _VisualLog:
             self.write('\n'.join(html))
             # File instance should be closed by the opener
             self._outFileObj = None
-
-    def removeOldScreenshots(self):
-        freeScreenshots = [filename
-                           for (filename, refCount) in self._screenshotRefCount.iteritems()
-                           if refCount == 0]
-        removeCount = len(freeScreenshots) - self._screenshotLimit
-        if removeCount > 0:
-            freeScreenshots.sort(reverse=True) # remove oldest
-            while removeCount > 0:
-                toBeRemoved = freeScreenshots.pop()
-                try:
-                    os.remove(toBeRemoved)
-                except IOError:
-                    pass
-                del self._screenshotRefCount[toBeRemoved]
-                removeCount -= 1
 
     def write(self, s):
         if self._outFileObj != None:
@@ -2365,8 +2494,6 @@ class _VisualLog:
             loggerSelf.logReturn(retval, img=retval, tip=origMethod.func_name)
             retval.findItemsByBitmap = loggerSelf.findItemsByBitmapLogger(retval.findItemsByBitmap, retval)
             retval.findItemsByOcr = loggerSelf.findItemsByOcrLogger(retval.findItemsByOcr, retval)
-            if loggerSelf._screenshotLimit >= 0:
-                loggerSelf.removeOldScreenshots()
             return retval
         return refreshScreenshotWRAP
 
