@@ -288,8 +288,8 @@ starter: |
 variables: 'variables' '{' bstr '}' {
             obj->set_variables($2.str,$n2.start_loc.pathname,$n2.start_loc.line,$n2.start_loc.col); };
 
-istate: 'initial_state' '{' bstr '}' {
-            obj->set_istate($2.str,$n2.start_loc.pathname,$n2.start_loc.line,$n2.start_loc.col); } ;
+istate: 'initial_state' opt_parentheses '{' bstr '}' {
+            obj->set_istate($3.str,$n3.start_loc.pathname,$n3.start_loc.line,$n3.start_loc.col); } ;
 
 ainit: 'adapter_init' opt_parentheses '{' bstr '}' {
             obj->set_ainit($3.str,$n3.start_loc.pathname,$n3.start_loc.line,$n3.start_loc.col); } ;
