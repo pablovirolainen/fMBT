@@ -297,14 +297,16 @@ ainit: 'adapter_init' '{' bstr '}' {
 aexit: 'adapter_exit' '{' bstr '}' {
             obj->set_aexit($2.str,$n2.start_loc.pathname,$n2.start_loc.line,$n2.start_loc.col); } ;
 
-guard: 'guard' '()' '{' bstr '}' {
+opt_parentheses: | '(' ')';
+
+guard: 'guard' opt_parentheses '{' bstr '}' {
             if (guard) {
                 raise_error($n0.start_loc,(Parser*)_parser);
             } else {
                 obj->set_guard($3.str,$n3.start_loc.pathname,$n3.start_loc.line,$n3.start_loc.col); guard=true;
             }
         } ;
-body: ('body'|'model') '()' '{' bstr '}' { if (body) {
+body: ('body'|'model') opt_parentheses '{' bstr '}' { if (body) {
                 raise_error($n0.start_loc,(Parser*)_parser);
             } else {
                 obj->set_body($3.str,$n3.start_loc.pathname,$n3.start_loc.line,$n3.start_loc.col);
@@ -312,7 +314,7 @@ body: ('body'|'model') '()' '{' bstr '}' { if (body) {
             }
         } ;
 
-adapter: 'adapter' '()' '{' bstr '}' { if (adapter) {
+adapter: 'adapter' opt_parentheses '{' bstr '}' { if (adapter) {
                 raise_error($n0.start_loc,(Parser*)_parser);
             } else {
                 obj->set_adapter($3.str,$n3.start_loc.pathname,$n3.start_loc.line,$n3.start_loc.col);
