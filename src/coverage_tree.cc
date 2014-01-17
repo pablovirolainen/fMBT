@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include "helper.hh"
 
+std::stack<Coverage_Tree::node*> Coverage_Tree::nodes_save;
+
 Coverage_Tree::Coverage_Tree(Log& l,const std::string& _params) :
   Coverage(l), max_depth(2), push_depth(0),have_filter(false), params(_params)
 {
@@ -70,7 +72,7 @@ void Coverage_Tree::pop()
   while(i!=e) {
     int action=i->second;
     struct node* current_node=i->first;
-    delete current_node->nodes[action];
+    delete_node(current_node->nodes[action]);
     current_node->nodes[action]=NULL;
     current_node->nodes.erase(action);
     i++;
@@ -177,7 +179,7 @@ bool Coverage_Tree::execute(int action)
     bool filt=filter(depth,action);
     _filt&=filt;
     if (_filt && current_node->nodes[action]==NULL) {
-      current_node->nodes[action]=new struct node;
+      current_node->nodes[action]=new_node();//new struct node;
       current_node->nodes[action]->action=action;
       node_count++;
       if (push_depth) {
