@@ -207,25 +207,10 @@ bool Lts::header_done()
 }
 
 #include <iostream>
-/*
-void Lts::precalc_input_output()
-{
-  int new_number=1;
-  std::map<std::string,int>::iterator i;
-  
-  for(i=action_name_map.begin();i!=action_name_map.end();i++) {
-    action_number_map[i->second]=new_number;
-    action_names[new_number]=i->first;
-    new_number++;
-  }
-  Model::precalc_input_output();
-}
-*/
 
 void Lts::add_action(int number,std::string& name)
 {
   action_names[number]=name;
-  //  action_name_map[name]=number;
   /* We suck.. sucess */
 }
 
@@ -238,37 +223,7 @@ void Lts::add_transitions(int st,
 
   log.debug("Updating state %i",
          st);
-  /*
 
-  std::map<int,int> tmap;
-
-  for(int i=ia.size();i>0;i--) {
-    int am=action_number_map[ia[i]];
-    tmap[am]=is[i];
-  }
-
-  int pos=0;
-
-  for(std::map<int,int>::iterator i=tmap.begin();
-      i!=tmap.end();i++) {
-    is[pos]=i->second;
-    ia[pos]=i->first;
-  }
-  tmap.clear();
-
-  for(int i=oa.size();i>0;i--) {
-    int am=action_number_map[oa[i]];
-    tmap[am]=os[i];
-  }
-
-  pos=0;
-
-  for(std::map<int,int>::iterator i=tmap.begin();
-      i!=tmap.end();i++) {
-    os[pos]=i->second;
-    oa[pos]=i->first;
-  }
-  */
   state[st].first=actions.size();
   state[st].transitions=oa.size()+ia.size();
   state[st].otransitions=oa.size();
@@ -284,42 +239,13 @@ int Lts::execute(int action)
 {
   struct _state* st=&state[current_state];
 
-  /*
-  std::vector<int>::iterator first=actions.begin()+st->first;
-  std::vector<int>::iterator last=first+st->transitions;
-  
-  std::vector<int>::iterator j=std::lower_bound(first,last,action);
-
-  if (j!=last) {
-    current_state=dstate[j-actions.begin()];
-    return true;
-  }
-  */
-  
   for(int i=0;i<st->transitions;i++) {
     if (actions[st->first+i]==action) {
       current_state=dstate[st->first+i];
       return true;
     }
   }
-  /*
-  int imin=st->first;
-  int imax=st->first+st->transitions-1;
-  while (imax >= imin)
-    {
-      int imid = imin + ((imax - imin) / 2);
-      if (actions[imid] < action) {
-        imin = imid + 1;
-      } else {
-	if (actions[imid] > action) {
-        imax = imid - 1;
-	} else {
-	  current_state=dstate[imid];
-	  return true;
-	}
-      }
-    }
-  */
+
   return false;
 }
 
