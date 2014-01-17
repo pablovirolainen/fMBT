@@ -41,6 +41,9 @@ enum {
 int state=NONE;
 std::stack<bool> echo_stack;
 
+std::string python_rivit;
+
+
 bool inc_split(std::string& s) {
   bool ret=true;
   size_t pos;
@@ -150,17 +153,23 @@ char* python_block(const char* input,FILE* yyout) {
 
   len=-1;
 
-  fprintf(c_in,"%s\n",input+2);
+  char* tmp=escape_string(input);
+  fprintf(c_in,"%s\n",tmp);
+  escape_free(tmp);
   g_io_channel_flush(c_in,NULL);
-
+  //fprintf(stdout,"%s",input);
   bgetline(&r,&len,c_out,lokki,false);
+
+  if (r) {
+    r=unescape_string(r);
+  }
 
   return r;
 }
 
 %}
 
-%Start STR
+%Start STR PYTHON
 
 %%
 
@@ -265,22 +274,53 @@ char* python_block(const char* input,FILE* yyout) {
   BEGIN 0;
 }
 
-^#\[[^\n]+ {
-  fprintf(yyout,"%s",python_block(yytext,yyout));
+^^>([^\n]*) {
+  if (python_rivit.empty()) {
+    std::string fn=fstack.back()+":"+to_string(lineno);
+    fprintf(yyout,"# 1 \"%s\"\x0A",fn.c_str(),fstack.size()+1);
+  }
+  python_rivit+=std::string(yytext+2);
 }
 
 [^\n] {
+  if (!python_rivit.empty()) {
+    //Laajennetaan pyyttonipätkä
+    char* ret=python_block(python_rivit.c_str(),yyout);
+    if (ret) {
+      //printf("python palautti %s\n",ret);
+      fprintf(yyout,"%s\n",ret);
+    } else {
+      //printf("Pythonilta tuli NULL\n");
+    }
+    python_rivit.clear();
+    fprintf(yyout,"# %i \"%s\"\x0A",lineno,fstack.back().c_str(),fstack.size());
+  }
+
   if (echo)
      fprintf(yyout,"%c",  yytext[0]);
 }
 
 "\n" {
-  lineno++;
-  if (echo)
-     fprintf(yyout,"%c",  yytext[0]);
+  lineno++;  
+  if (!python_rivit.empty()) {
+    python_rivit+="\n";
+  } else {
+    if (echo) {
+      fprintf(yyout,"%c",  yytext[0]);
+    }
+  }
 }
 
 <<EOF>> {
+  if (!python_rivit.empty()) {
+    python_rivit+="\n";
+    char* ret=python_block(python_rivit.c_str(),yyout);
+    if (ret) {
+      fprintf(yyout,"%s\n",ret);
+    }
+    python_rivit.clear();
+    fprintf(yyout,"# %i \"%s\"\x0A",lineno,fstack.back().c_str(),fstack.size());
+  }  
   if (yy_hold_char!='\n') {
      lineno++;
      fprintf(yyout,"\n");
