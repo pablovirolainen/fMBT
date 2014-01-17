@@ -79,7 +79,6 @@ public:
 		       std::vector<int>& is);
 
   virtual std::string stringify();
-  //virtual void precalc_input_output();
 
 protected:
   std::map<int,std::vector<int> > stateprops;
@@ -102,8 +101,6 @@ protected:
     int otransitions; /* how many output transition each state has */
   };
   
-  //std::map<std::string,int> action_name_map;
-  //std::map<int,int> action_number_map;
   std::vector<struct _state> state;
   std::vector<int> actions;
   std::stack<int> state_save;
