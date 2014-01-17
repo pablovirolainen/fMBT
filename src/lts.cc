@@ -238,14 +238,13 @@ void Lts::add_transitions(int st,
 int Lts::execute(int action)
 {
   struct _state* st=&state[current_state];
-
+  
   for(int i=0;i<st->transitions;i++) {
     if (actions[st->first+i]==action) {
       current_state=dstate[st->first+i];
       return true;
     }
   }
-
   return false;
 }
 
