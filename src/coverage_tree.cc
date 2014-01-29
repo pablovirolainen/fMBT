@@ -26,11 +26,12 @@ std::stack<Coverage_Tree::node*> Coverage_Tree::nodes_save;
 Coverage_Tree::Coverage_Tree(Log& l,const std::string& _params) :
   Coverage(l), max_depth(2), push_depth(0),have_filter(false), params(_params)
 {
-  set_instance(0);
   commalist(params,subs);
-
-  (*exec)[0].first = &root_node;
   set_max_depth(subs[0]);
+
+  set_instance(0);
+  (*exec)[0].first = &root_node;
+
   push();
 
   if ((subs.size()>1) && (((unsigned)max_depth+1)!=subs.size())) {
@@ -45,19 +46,37 @@ Coverage_Tree::Coverage_Tree(Log& l,const std::string& _params) :
 bool Coverage_Tree::set_instance(int instance)
 {
   if (instance_map.find(instance)==instance_map.end()) {
-    instance_map[instance] = new std::map<int,std::pair<struct node*,bool> >;
+    instance_map[instance] = new_exec();
   }
   exec=instance_map[instance];
+  // Can do this, because push-depth requirements when changing instance
+  prev_exec=exec;
   return true;
 }
-
 
 void Coverage_Tree::push()
 {
   push_depth++;
   std::list<std::pair<struct node*, int> > a;
   push_restore.push(a);
-  exec_restore.push((*exec));
+  exec_restore.push(
+		    std::pair<
+		      std::vector<std::pair<struct node*,bool> >*,
+		      std::vector<std::pair<struct node*,bool> >*
+		      >
+		    (exec,prev_exec));
+  /*
+  exec_restore.push(exec);
+  exec_restore.push(prev_exec);
+  */
+  // handle push push case
+  if (!((*exec)[0].first)) 
+    prev_exec=exec;
+
+  // Let's pool these...
+  exec = new_exec();
+  //exec -> resize(max_depth+1);
+
   node_count_restore.push(node_count);
 }
 
@@ -75,13 +94,27 @@ void Coverage_Tree::pop()
     delete_node(current_node->nodes[action]);
     current_node->nodes[action]=NULL;
     current_node->nodes.erase(action);
-    i++;
+    ++i;
   }
   push_restore.pop();
 
-  (*exec)=exec_restore.top();
+  /*
+  (*exec).swap(exec_restore.top());
+  exec_restore.pop();
+  */
+  delete_exec(exec);
+
+  exec=exec_restore.top().first;
+  prev_exec=exec_restore.top().second;
+
   exec_restore.pop();
 
+  /*
+  prev_exec=exec_restore.top();
+  exec_restore.pop();
+  exec=exec_restore.top();
+  exec_restore.pop();
+  */
   node_count=node_count_restore.top();
   node_count_restore.pop();
 
@@ -162,10 +195,14 @@ Coverage_Tree::~Coverage_Tree()
     abort();
   }
 
-  for(std::map<int,std::map<int,std::pair<struct node*,bool> >*>::iterator i=
-	instance_map.begin();i!=instance_map.end();i++) {
+  for(std::map<int,std::vector<std::pair<struct node*,bool> >*>::iterator i=
+	instance_map.begin();i!=instance_map.end();++i) {
     delete i->second;
-  }	
+  }
+
+  for(;!exec_save.empty();exec_save.pop()) {
+    delete exec_save.top();
+  }
 
 }
 
@@ -188,15 +225,17 @@ bool Coverage_Tree::execute(int action)
       }
     }
     depth++;
-    next_node=(*exec)[depth].first;
-    bool _filt_tmp=(*exec)[depth].second;
-    if (current_node)
+    next_node=(*prev_exec)[depth].first;
+    bool _filt_tmp=(*prev_exec)[depth].second;
+    if (current_node) {
       (*exec)[depth]=std::pair<struct node*, bool>(current_node->nodes[action],_filt);
-    else
-      (*exec)[depth]=std::pair<struct node*, bool>(current_node,_filt);
+    } else {
+      (*exec)[depth]=std::pair<struct node*, bool>(NULL,_filt);
+    }
     _filt=_filt_tmp;
     current_node=next_node;
   }
+  prev_exec=exec;
 
   return true;
 }
