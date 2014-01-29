@@ -88,9 +88,11 @@ class AALModel:
             if guard_list != None:
                 guard_list.pop()
 
-    def call_exception_handler(self, handler_name, action_name, exc):
+    def call_exception_handler(self, handler_name, action_name, exc, pass_through_rv=[]):
         rv = self._variables[handler_name](action_name, exc)
-        if type(rv) == int:
+        if rv in pass_through_rv:
+            return rv
+        elif type(rv) == int:
             return rv
         elif rv == None or rv == True:
             return self._variables['action'](action_name)
@@ -284,7 +286,16 @@ class AALModel:
             for index, adapter in enumerate(self._all_adapters):
                 if self._all_types[index] != "output": continue
                 fmbt._g_actionName = self._all_names[index]
-                output_action = self.call(adapter)
+                try:
+                    output_action = self.call(adapter)
+                except Exception, exc:
+                    if 'adapter_exception_handler' in self._variables:
+                        output_action = self.call_exception_handler(
+                            'adapter_exception_handler',
+                            self._all_names[index], exc,
+                            pass_through_rv = [False])
+                    else:
+                        raise
                 observed_action = None
                 if type(output_action) == str:
                     observed_action = self._all_names.index(output_action) + 1
