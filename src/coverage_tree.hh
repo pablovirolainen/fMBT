@@ -154,7 +154,7 @@ protected:
     (*n)[0].first=NULL;
   }
 
-  static inline struct node* new_node() {
+  static inline struct node* new_node(int action) {
     struct node* ret;
 
     if (nodes_save.empty()) {
@@ -164,6 +164,7 @@ protected:
       nodes_save.pop();
     }
 
+    ret->action=action;
     return ret;
   }
 

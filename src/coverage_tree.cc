@@ -183,7 +183,9 @@ void Coverage_Tree::history(int action,std::vector<int>& props,
   } else {
     // verdict. And now we should do ??
     (*exec).clear();
+    (*exec).resize(max_depth+1);
     (*exec)[0].first = &root_node;
+    prev_exec=exec;
   }
 }
 
@@ -215,9 +217,9 @@ bool Coverage_Tree::execute(int action)
   while (depth<max_depth) {
     bool filt=filter(depth,action);
     _filt&=filt;
-    if (_filt && current_node->nodes[action]==NULL) {
-      current_node->nodes[action]=new_node();//new struct node;
-      current_node->nodes[action]->action=action;
+    if (_filt && current_node->nodes.find(action)==current_node->nodes.end()) {
+      current_node->nodes[action]=new_node(action);//new struct node;
+      //current_node->nodes[action]->action=action;
       node_count++;
       if (push_depth) {
 	push_restore.top().push_front(std::pair<struct node*, int>
