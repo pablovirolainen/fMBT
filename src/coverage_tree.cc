@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include "helper.hh"
 
-std::stack<Coverage_Tree::node*> Coverage_Tree::nodes_save;
+std::vector<Coverage_Tree::node*> Coverage_Tree::nodes_save;
 
 Coverage_Tree::Coverage_Tree(Log& l,const std::string& _params) :
   Coverage(l), max_depth(2), push_depth(0),have_filter(false), params(_params)
@@ -65,19 +65,12 @@ void Coverage_Tree::push()
 		      std::vector<std::pair<struct node*,bool> >*
 		      >
 		    (exec,prev_exec));
-  /*
-  exec_restore.push(exec);
-  exec_restore.push(prev_exec);
-  */
   // handle push push case
   if (!((*exec)[0].first)) 
     prev_exec=exec;
 
-  // Let's pool these...
   exec = new_exec();
-  //exec -> resize(max_depth+1);
-
-  node_count_restore.push(node_count);
+  node_count_restore.push_back(node_count);
 }
 
 void Coverage_Tree::pop()
@@ -98,10 +91,6 @@ void Coverage_Tree::pop()
   }
   push_restore.pop();
 
-  /*
-  (*exec).swap(exec_restore.top());
-  exec_restore.pop();
-  */
   delete_exec(exec);
 
   exec=exec_restore.top().first;
@@ -109,14 +98,8 @@ void Coverage_Tree::pop()
 
   exec_restore.pop();
 
-  /*
-  prev_exec=exec_restore.top();
-  exec_restore.pop();
-  exec=exec_restore.top();
-  exec_restore.pop();
-  */
-  node_count=node_count_restore.top();
-  node_count_restore.pop();
+  node_count=node_count_restore.back();
+  node_count_restore.pop_back();
 
   push_depth--;
 }
@@ -161,7 +144,7 @@ int Coverage_Tree::actions_at_depth(int depth) {
   return act_depth[depth];
 }
 
-bool Coverage_Tree::filter(int depth,int action)
+inline bool Coverage_Tree::filter(int depth,int action)
 {
   if (!have_filter) {
     return true;
@@ -202,8 +185,8 @@ Coverage_Tree::~Coverage_Tree()
     delete i->second;
   }
 
-  for(;!exec_save.empty();exec_save.pop()) {
-    delete exec_save.top();
+  for(;!exec_save.empty();exec_save.pop_back()) {
+    delete exec_save.back();
   }
 
 }
@@ -219,7 +202,7 @@ bool Coverage_Tree::execute(int action)
     _filt&=filt;
     if (_filt && current_node->nodes.find(action)==current_node->nodes.end()) {
       current_node->nodes[action]=new_node(action);//new struct node;
-      //current_node->nodes[action]->action=action;
+
       node_count++;
       if (push_depth) {
 	push_restore.top().push_front(std::pair<struct node*, int>
