@@ -22,6 +22,7 @@
 #include "history.hh"
 #include "coverage_of.hh"
 #include <cstring>
+#include "heuristic_proxy.hh"
 
 #ifndef DROI
 #include <glib.h>
@@ -142,6 +143,8 @@ void Conf::load(std::string& name,std::string& content)
     RETURN_ERROR_VOID(heuristic_lineno,"Creating heuristic \"" +
 		      heuristic_name + "\" failed.");
 
+  heuristic=new Heuristic_proxy(log,heuristic,heuristic_name);
+
   heuristic->lineno = heuristic_lineno;
 
   if (heuristic->status==false)
@@ -178,7 +181,7 @@ void Conf::load(std::string& name,std::string& content)
 
   set_model_callbacks[0]=coverage;
 
-  for(std::vector<Coverage*>::iterator i=set_model_callbacks.begin();i!=set_model_callbacks.end();i++) {
+  for(std::vector<Coverage*>::iterator i=set_model_callbacks.begin();i!=set_model_callbacks.end();++i) {
     (*i)->set_model(model);
     if (!((*i)->status)) {
       RETURN_ERROR_VOID((*i)->lineno,"Coverage error: " + (*i)->stringify());
