@@ -749,11 +749,15 @@ ssize_t bgetline(char **lineptr, size_t *n, GIOChannel* stream, Log& log,GIOChan
 	
 	if (!callback_proxy.call(conf_str,ret_str)) {
 	  // no such call?
+	  log.debug("fmbt_call 0\n");
 	  fprintf(magic,"fmbt_call 0\n");
+	  g_io_channel_flush(magic,NULL);
 	} else {
 	  // Call ok
 	  escape_string(ret_str);
-	  fprintf(magic,"fmbt_call 1 %s\n",ret_str.c_str());
+	  log.debug("fmbt_call 1 %s\n",ret_str.c_str());
+	  fprintf(magic,"fmbt_call 1%s\n",ret_str.c_str());
+	  g_io_channel_flush(magic,NULL);
 	}
 	
 	g_free(*lineptr);
