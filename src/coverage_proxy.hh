@@ -110,6 +110,8 @@ protected:
     return true;
   }
 
+  bool get_value(std::string params,std::string& ret_str);
+
   Coverage* c;
   std::string name;
 

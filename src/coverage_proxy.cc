@@ -18,12 +18,21 @@
  */
 
 #include "coverage_proxy.hh"
+#include "helper.hh"
 
 Coverage_proxy::Coverage_proxy(Log& l,Coverage* _c,const std::string& _n):
   Coverage(l), c(_c),name(_n) {
   callback_proxy.add_call(std::string("coverage"),this,(Proxy::func_ptr_t) & Coverage_proxy::call);
   add_call(std::string("get"),this,(Proxy::func_ptr_t) & Coverage_proxy::get);
   add_call(std::string("set"),this,(Proxy::func_ptr_t) & Coverage_proxy::set);
+  add_call(std::string("getValue"),this,(Proxy::func_ptr_t) & Coverage_proxy::get_value);
+
   status=c->status;errormsg=c->errormsg;
+}
+
+
+bool Coverage_proxy::get_value(std::string params,std::string& ret_str) {
+  ret_str=to_string(c->getCoverage());
+  return true;
 }
 
