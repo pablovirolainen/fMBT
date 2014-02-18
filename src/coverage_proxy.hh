@@ -86,7 +86,7 @@ public:
 protected:
 
   bool get(std::string params,std::string& ret_str) {
-    printf("Kutsuttiin coverage_proxy:n get-metodia!\n");
+    log.debug("Kutsuttiin coverage_proxy:n get-metodia!\n");
     if (c) {
       ret_str=name;
     } else {
@@ -97,11 +97,12 @@ protected:
   
   bool set(std::string params,std::string& ret_str) {
     Coverage* cc=new_coverage(log,params);
-    printf("Kutsuttiin coverage_proxy:n set-metodia!\n");
+    log.debug("Kutsuttiin coverage_proxy:n set-metodia!\n");
     if (cc) {
       name=params;
       delete c;
       c=cc;
+      c->set_model(model);
       status=c->status;errormsg=c->errormsg;
       ret_str="True";
     } else {

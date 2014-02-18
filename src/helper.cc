@@ -755,7 +755,7 @@ ssize_t bgetline(char **lineptr, size_t *n, GIOChannel* stream, Log& log,GIOChan
 	} else {
 	  // Call ok
 	  escape_string(ret_str);
-	  log.debug("fmbt_call 1 %s\n",ret_str.c_str());
+	  log.debug("fmbt_call 1%s\n",ret_str.c_str());
 	  fprintf(magic,"fmbt_call 1%s\n",ret_str.c_str());
 	  g_io_channel_flush(magic,NULL);
 	}

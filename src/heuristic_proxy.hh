@@ -73,6 +73,7 @@ public:
 protected:
 
   bool get(std::string params,std::string& ret_str) {
+    log.debug("Kutsuttiin heuristic_proxy:n get-metodia!\n");
     if (h) {
       ret_str=name;
     } else {
@@ -83,10 +84,13 @@ protected:
   
   bool set(std::string params,std::string& ret_str) {
     Heuristic* hh=new_heuristic(log,params);
+    log.debug("Kutsuttiin heuristic_proxy:n set-metodia! %s\n",params.c_str());
     if (hh) {
       name=params;
       delete h;
       h=hh;
+      h->set_model(model);
+      h->set_coverage(my_coverage);
       ret_str="True";
     } else {
       ret_str="False";

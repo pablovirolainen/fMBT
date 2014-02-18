@@ -29,6 +29,7 @@
 
 import datetime
 import sys
+import urllib
 
 _g_fmbt_adapterlogtimeformat="%s.%f"
 _g_actionName = "undefined"
@@ -38,13 +39,13 @@ _g_simulated_actions = []
 def _fmbt_call_helper(func,param = ""):
     if simulated():
         return ""
-    sys.stdout.write("fmbt_call %s %s\n" % (func,param))
+    sys.stdout.write("fmbt_call %s.%s\n" % (func,param))
     sys.stdout.flush()
-    response = sys.stdin.readline()
+    response = sys.stdin.readline().rstrip()
     magic,code = response.split(" ")
     if magic == "fmbt_call":
         if code[0] == "1":
-            return code[1:] #urllib.unquote(code[1:])
+            return urllib.unquote(code[1:])
     return ""
 
 
