@@ -19,11 +19,22 @@
 
 #include "heuristic_proxy.hh"
 
+Heuristic* Heuristic_proxy::old_heuristic=NULL;
+
+Heuristic* heuristic_proxy_creator (Log& log, std::string params = "")
+{
+  return Heuristic_proxy::old_heuristic;
+}
+
 Heuristic_proxy::Heuristic_proxy(Log& l,Heuristic* _h,const std::string& _n):
   Heuristic(l), h(_h),name(_n) {
   callback_proxy.add_call(std::string("heuristic"),this,(Proxy::func_ptr_t) & Heuristic_proxy::call);
   add_call(std::string("get"),this,(Proxy::func_ptr_t) & Heuristic_proxy::get);
   add_call(std::string("set"),this,(Proxy::func_ptr_t) & Heuristic_proxy::set);
   status=h->status;errormsg=h->errormsg;
+
+  old_heuristic=h;
+
+  HeuristicFactory::add_factory("old",heuristic_proxy_creator);
 }
 

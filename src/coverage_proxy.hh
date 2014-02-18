@@ -32,6 +32,8 @@ public:
 
   virtual ~Coverage_proxy() {
     delete c;
+    // Removeme...
+    CoverageFactory::add_factory("old",NULL);    
   }
 
   virtual void push() {
@@ -83,6 +85,8 @@ public:
     status=c->status;errormsg=c->errormsg;
   }
 
+  static Coverage* old_coverage;
+
 protected:
 
   bool get(std::string params,std::string& ret_str) {
@@ -105,6 +109,7 @@ protected:
       c->set_model(model);
       status=c->status;errormsg=c->errormsg;
       ret_str="True";
+      old_coverage=c;
     } else {
       ret_str="False";
     }
@@ -115,7 +120,6 @@ protected:
 
   Coverage* c;
   std::string name;
-
 };
 
 #endif

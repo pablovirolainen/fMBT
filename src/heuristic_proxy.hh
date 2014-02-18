@@ -32,6 +32,7 @@ public:
 
   virtual ~Heuristic_proxy() {
     delete h;
+    HeuristicFactory::add_factory("old",NULL);
   }
 
   virtual bool execute(int action) {
@@ -69,6 +70,8 @@ public:
     h->set_model(model);
     status=h->status;errormsg=h->errormsg;
   }
+
+  static Heuristic* old_heuristic;
 
 protected:
 

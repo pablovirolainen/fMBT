@@ -20,6 +20,13 @@
 #include "coverage_proxy.hh"
 #include "helper.hh"
 
+Coverage* Coverage_proxy::old_coverage=NULL;
+
+Coverage* coverage_proxy_creator (Log& log, std::string params = "")
+{
+  return Coverage_proxy::old_coverage;
+}
+
 Coverage_proxy::Coverage_proxy(Log& l,Coverage* _c,const std::string& _n):
   Coverage(l), c(_c),name(_n) {
   callback_proxy.add_call(std::string("coverage"),this,(Proxy::func_ptr_t) & Coverage_proxy::call);
@@ -28,6 +35,10 @@ Coverage_proxy::Coverage_proxy(Log& l,Coverage* _c,const std::string& _n):
   add_call(std::string("getValue"),this,(Proxy::func_ptr_t) & Coverage_proxy::get_value);
 
   status=c->status;errormsg=c->errormsg;
+
+  old_coverage=c;
+
+  CoverageFactory::add_factory("old",coverage_proxy_creator);
 }
 
 
