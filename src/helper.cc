@@ -748,14 +748,12 @@ ssize_t bgetline(char **lineptr, size_t *n, GIOChannel* stream, Log& log,GIOChan
 	std::string ret_str;
 	
 	if (!callback_proxy.call(conf_str,ret_str)) {
-	  printf("No such call %s\n",conf_str);
-	  fprintf(magic,"fmbt_call 0\n");
 	  // no such call?
+	  fprintf(magic,"fmbt_call 0\n");
 	} else {
-	  printf("Call %s ok, %s\n",conf_str,ret_str.c_str());
+	  // Call ok
 	  escape_string(ret_str);
 	  fprintf(magic,"fmbt_call 1 %s\n",ret_str.c_str());
-	  // Call ok
 	}
 	
 	g_free(*lineptr);

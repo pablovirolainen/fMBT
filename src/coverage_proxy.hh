@@ -36,26 +36,35 @@ public:
 
   virtual void push() {
     c->push();
+    status=c->status;errormsg=c->errormsg;
   }
   virtual void pop() {
     c->pop();
+    status=c->status;errormsg=c->errormsg;
   }
 
   virtual bool set_instance(int instance) {
-    return c->set_instance(instance);
+    bool ret=c->set_instance(instance);
+    status=c->status;errormsg=c->errormsg;
+    return ret;
   }
 
   virtual void history(int action, std::vector<int>& props,
  		       Verdict::Verdict verdict) {
     c->history(action,props,verdict);
+    status=c->status;errormsg=c->errormsg;
   }
 
   virtual bool execute(int action) {
-    return c->execute(action);
+    bool ret=c->execute(action);
+    status=c->status;errormsg=c->errormsg;
+    return ret;
   }
 
   virtual float getCoverage() {
-    return c->getCoverage();
+    float ret=c->getCoverage();
+    status=c->status;errormsg=c->errormsg;
+    return ret;
   }
 
   virtual std::string stringify() {
@@ -63,11 +72,15 @@ public:
   }
 
   virtual int fitness(int* actions,int n, float* fitness) {
-    return c->fitness(actions,n,fitness);
+    int ret= c->fitness(actions,n,fitness);
+    status=c->status;errormsg=c->errormsg;
+    return ret;
   }
+
   virtual void set_model(Model* _model) {
     Coverage::set_model(_model);
     c->set_model(model);
+    status=c->status;errormsg=c->errormsg;
   }
 
 protected:
@@ -89,6 +102,7 @@ protected:
       name=params;
       delete c;
       c=cc;
+      status=c->status;errormsg=c->errormsg;
       ret_str="True";
     } else {
       ret_str="False";

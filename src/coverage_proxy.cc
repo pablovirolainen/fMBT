@@ -24,5 +24,6 @@ Coverage_proxy::Coverage_proxy(Log& l,Coverage* _c,const std::string& _n):
   callback_proxy.add_call(std::string("coverage"),this,(Proxy::func_ptr_t) & Coverage_proxy::call);
   add_call(std::string("get"),this,(Proxy::func_ptr_t) & Coverage_proxy::get);
   add_call(std::string("set"),this,(Proxy::func_ptr_t) & Coverage_proxy::set);
+  status=c->status;errormsg=c->errormsg;
 }
 

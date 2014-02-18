@@ -33,21 +33,43 @@ public:
   virtual ~Heuristic_proxy() {
     delete h;
   }
+
+  virtual bool execute(int action) {
+    bool ret= h->execute(action);
+    status=h->status;errormsg=h->errormsg;
+    return ret;
+  }
+
+  virtual float getCoverage() {
+    float ret= h->getCoverage();
+    status=h->status;errormsg=h->errormsg;
+    return ret;
+  }
+
   virtual int getAction() {
-    return h->getAction();
+    int ret= h->getAction();
+    status=h->status;errormsg=h->errormsg;
+    return ret;
   }
+
   virtual int getIAction() {
-    return h->getIAction();
-  }
-  virtual void set_model(Model* _model) {
-    Heuristic::set_model(_model);
-    h->set_model(model);
+    int ret= h->getIAction();
+    status=h->status;errormsg=h->errormsg;
+    return ret;
   }
 
   virtual void set_coverage(Coverage* c) {
     Heuristic::set_coverage(c);
     h->set_coverage(c);
+    status=h->status;errormsg=h->errormsg;
   }
+
+  virtual void set_model(Model* _model) {
+    Heuristic::set_model(_model);
+    h->set_model(model);
+    status=h->status;errormsg=h->errormsg;
+  }
+
 protected:
 
   bool get(std::string params,std::string& ret_str) {

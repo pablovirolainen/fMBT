@@ -24,5 +24,6 @@ Heuristic_proxy::Heuristic_proxy(Log& l,Heuristic* _h,const std::string& _n):
   callback_proxy.add_call(std::string("heuristic"),this,(Proxy::func_ptr_t) & Heuristic_proxy::call);
   add_call(std::string("get"),this,(Proxy::func_ptr_t) & Heuristic_proxy::get);
   add_call(std::string("set"),this,(Proxy::func_ptr_t) & Heuristic_proxy::set);
+  status=h->status;errormsg=h->errormsg;
 }
 
