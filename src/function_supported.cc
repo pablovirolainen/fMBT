@@ -17,18 +17,17 @@
  *
  */
 
-#define _RANDOM_INTERNAL_
-#include "function.hh"
-#include "random_supported.hh"
+#define _FUNCTION_INTERNAL_
+#include "function_supported.hh"
 #include "params.hh"
 #include "helper.hh"
 
-Random_Supported::Random_Supported(const std::string& param) {
+Function_Supported::Function_Supported(const std::string& param) {
   std::vector<std::string> s;
   commalist(param,s);
   r=NULL;
   for(unsigned i=0;i<s.size();i++) {
-    r=new_random(s[i]);
+    r=new_function(s[i]);
     if (r) {
       if (!r->status) {
 	delete r;
@@ -43,26 +42,25 @@ Random_Supported::Random_Supported(const std::string& param) {
   }
 }
 
-Random_Supported::~Random_Supported()
+Function_Supported::~Function_Supported()
 {
   if (r)
     delete r;
 }
 
-
-std::string Random_Supported::stringify() {
+std::string Function_Supported::stringify() {
   if (status) {
     return r->stringify();
   } 
   return Writable::stringify();
 }
 
-double Random_Supported::drand48() {
-  return r->drand48();
+float Function_Supported::fval() {
+  return r->fval();
 }
 
-unsigned long Random_Supported::rand() {
-  return r->rand();
+signed long Function_Supported::val() {
+  return r->val();
 }
 
-FACTORY_DEFAULT_CREATOR(Random, Random_Supported, "supported")
+FACTORY_DEFAULT_CREATOR(Function, Function_Supported, "supported")
