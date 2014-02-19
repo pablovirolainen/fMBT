@@ -16,6 +16,9 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+
+#ifndef  __MINGW32__
+
 #define _RANDOM_INTERNAL_
 #include "function.hh"
 #include "random_devrandom.hh"
@@ -66,3 +69,5 @@ unsigned long Random_DevRandom::rand() {
 
 FACTORY_DEFAULT_CREATOR(Random, Random_DevRandom, "/dev/random")
 FACTORY_DEFAULT_CREATOR(Function, Random_DevRandomf, "/dev/random")
+
+#endif /* __MINGW32__ */
