@@ -25,7 +25,7 @@ public:
   Function_Supported(const std::string& param);
   virtual ~Function_Supported();
   virtual signed long val();
-  virtual float fval();
+  virtual double fval();
   std::string stringify();
   Function* r;
 };

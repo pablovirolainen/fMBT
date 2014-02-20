@@ -17,19 +17,18 @@
  *
  */
 
-#ifndef __RANDOM_C_HH__
-#include "random.hh"
+#ifndef __FUNCTION_SUM_HH__
+#include "function.hh"
+#include <list>
 
-class Random_C: public Random {
+class Function_sum: public Function {
 public:
-  Random_C(const std::string& param);
-  virtual ~Random_C() {}
-  virtual unsigned long rand();
-  virtual std::string stringify();
-  bool global;
-  unsigned int seed;
-  unsigned int initial_seed;
+  Function_sum(const std::string& param);
+  virtual ~Function_sum();
+  virtual signed long val();
+  virtual double fval();
+  std::list<Function*> funcs;
 };
 
 
-#endif /* __RANDOM_C_HH__ */
+#endif /* __FUNCTION_SUM_HH__ */

@@ -31,7 +31,7 @@ signed long Function_ftime::val() {
   return tv.tv_usec + tv.tv_usec*1000000;
 }
 
-float Function_ftime::fval() {
+double Function_ftime::fval() {
   struct timeval tv;
   gettime(&tv);
   return (1.0*tv.tv_sec) + (1.0*tv.tv_usec)/1000000.0;

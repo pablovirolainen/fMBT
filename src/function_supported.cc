@@ -55,7 +55,7 @@ std::string Function_Supported::stringify() {
   return Writable::stringify();
 }
 
-float Function_Supported::fval() {
+double Function_Supported::fval() {
   return r->fval();
 }
 

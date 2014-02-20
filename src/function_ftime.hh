@@ -17,19 +17,16 @@
  *
  */
 
-#ifndef __RANDOM_C_HH__
-#include "random.hh"
+#ifndef __FUNCTION_FTIME_HH__
+#include "function.hh"
 
-class Random_C: public Random {
+class Function_ftime: public Function {
 public:
-  Random_C(const std::string& param);
-  virtual ~Random_C() {}
-  virtual unsigned long rand();
-  virtual std::string stringify();
-  bool global;
-  unsigned int seed;
-  unsigned int initial_seed;
+  Function_ftime(const std::string& param);
+  virtual ~Function_ftime() {}
+  virtual signed long val();
+  virtual double fval();
 };
 
 
-#endif /* __RANDOM_C_HH__ */
+#endif /* __FUNCTION_FTIME_HH__ */
