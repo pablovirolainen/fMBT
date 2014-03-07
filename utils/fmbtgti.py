@@ -1302,6 +1302,12 @@ class GUITestInterface(object):
                                      thumbnailWidth, timeFormat, delayedDrawing,
                                      copyBitmapsToScreenshotDir)
 
+
+    def visualId(self, message = None, id = None):
+        """Returns ID to current log section.
+        """
+        return None
+
     def visualLog(self, *args):
         """Writes parameters to the visual log, given that visual logging is
         enabled.
@@ -2331,6 +2337,7 @@ class _VisualLog:
         device.tap = self.tapLogger(device.tap)
         device.drag = self.dragLogger(device.drag)
         device.visualLog = self.messageLogger(device.visualLog)
+        device.visualId  = self.visualId
         attrs = ['callContact', 'callNumber', 'close',
                  'loadConfig', 'platformVersion',
                  'pressAppSwitch', 'pressBack', 'pressHome',
@@ -2350,6 +2357,21 @@ class _VisualLog:
                 setattr(device, m.func_name, self.genericLogger(m))
         self.logHeader()
         self._blockId = 0
+
+    def visualId(self, message=None, id=None):
+        if message:
+            self.logBlock()
+            self.write('''<a href="#%s">%s</a><br>''' % (id,message))
+
+        pid = self._blockId
+        ts = fmbt.getTestStep()
+        an = fmbt.getActionName()
+        if ts == -1 or an == "undefined":
+            an = self._userFunction
+            ts = self._userCallCount
+        if not (self._testStep != ts or self._actionName != an):
+            pid=pid-1
+        return '''blockId%s''' % pid
 
     def close(self):
         if self._outFileObj != None:
