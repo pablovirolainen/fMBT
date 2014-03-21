@@ -24,7 +24,9 @@ Coverage* Coverage_proxy::old_coverage=NULL;
 
 Coverage* coverage_proxy_creator (Log& log, std::string params = "")
 {
-  return Coverage_proxy::old_coverage;
+  Coverage* ret=Coverage_proxy::old_coverage;
+  Coverage_proxy::old_coverage=NULL;
+  return ret;
 }
 
 Coverage_proxy::Coverage_proxy(Log& l,Coverage* _c,const std::string& _n):

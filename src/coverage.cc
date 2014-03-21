@@ -24,6 +24,8 @@ FACTORY_ATEXIT(Coverage)
 FACTORY_CREATORS(Coverage)
 FACTORY_ADD_FACTORY(Coverage)
 
+#include "coverage_proxy.hh"
+
 Coverage* CoverageFactory::create(Log& log, std::string name,
 				  std::string params="")
 {
@@ -75,6 +77,7 @@ std::string Coverage::stringify() {
 Coverage* new_coverage(Log& l,const std::string& s) {
   std::string name,option;
   param_cut(s,name,option);
+  Coverage* old_save=Coverage_proxy::old_coverage;
   Coverage* ret=CoverageFactory::create(l, name, option);
 
   if (ret) {
@@ -88,6 +91,8 @@ Coverage* new_coverage(Log& l,const std::string& s) {
   if (ret) {
     fprintf(stderr,"DEPRECATED COVERAGE SYNTAX. %s\nNew syntax is %s(%s)\n",
 	    s.c_str(),name.c_str(),option.c_str());
+  } else {
+    Coverage_proxy::old_coverage=old_save;    
   }
   return ret;
 }

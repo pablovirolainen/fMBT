@@ -33,13 +33,14 @@ public:
   virtual ~Coverage_proxy() {
     delete c;
     // Removeme...
-    CoverageFactory::add_factory("old",NULL);    
+    CoverageFactory::add_factory("old",NULL);
   }
 
   virtual void push() {
     c->push();
     status=c->status;errormsg=c->errormsg;
   }
+
   virtual void pop() {
     c->pop();
     status=c->status;errormsg=c->errormsg;
