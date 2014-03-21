@@ -20,6 +20,7 @@
 #include "params.hh"
 #define _RANDOM_INTERNAL_
 #include "random.hh"
+#include "random_proxy.hh"
 #include <stdio.h>
 
 FACTORY_IMPLEMENTATION(Random)
@@ -108,6 +109,10 @@ Random* Random::default_random() {
   if (!_default_random) {
     std::string rname("C(supported(/dev/urandom,ustime))");
     _default_random = new_random(rname);
+    if (_default_random) {
+      _default_random = new Random_Proxy(_default_random);
+      
+    }
   } else {
     _default_random->ref();
   }
