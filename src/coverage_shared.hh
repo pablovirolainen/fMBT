@@ -76,7 +76,7 @@ public:
 	  errormsg = "coverage shared: g_shell_parse_argv error: " + std::string(gerr->message)
 	    + " when parsing " + prm;
 	  log.debug(errormsg.c_str());
-	  status = false;
+	  comm_status = false;
 	  return;
 	}
 	
@@ -92,13 +92,13 @@ public:
 	if (gerr) {
 	  errormsg = "coverage shared g_spawn_async_with_pipes error: " + std::string(gerr->message);
 	  log.debug(errormsg.c_str());
-	  status = false;
+	  comm_status = false;
 	  return;
 	}
 	
 	prefix="shared("+prm+")";
 	
-	monitor();
+	monitor(&comm_status);
 	
 	d_stdin=g_io_channel_unix_new(_stdin);  
 	d_stdout=g_io_channel_unix_new(_stdout);
@@ -196,6 +196,7 @@ public:
 protected:
   void communicate(int action);
   void receive_from_server();
+  bool comm_status;
 
   int push_depth;
   Coverage* child;

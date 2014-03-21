@@ -34,7 +34,7 @@ void Coverage_shared::receive_from_server()
   while(g_main_context_iteration(NULL,FALSE));
 
   if (getline(&s,&si,d_stdout)<0) {
-    status=false;
+    comm_status=false;
     return;
   }
 
@@ -46,7 +46,7 @@ void Coverage_shared::receive_from_server()
 
   if (!string2vector(log,s,clients,0,INT_MAX,this)) {
     g_free(s);
-    status=false;
+    comm_status=false;
     return;
   }
   s=ss;
@@ -54,13 +54,13 @@ void Coverage_shared::receive_from_server()
   // Read each client...
   for(unsigned i=0;i<clients.size();i++) {
     if (getline(&s,&si,d_stdout)<0) {
-      status=false;
+      comm_status=false;
       if (s)
 	g_free(s);
       return;
     }
 
-    if (!status) {
+    if (!comm_status) {
       continue;
     }
 
@@ -68,7 +68,7 @@ void Coverage_shared::receive_from_server()
       
       // Prepare the 
       if (!child->set_instance(clients[i])) {
-	status=false;
+	comm_status=false;
 	continue;
       }
       
@@ -77,18 +77,18 @@ void Coverage_shared::receive_from_server()
       std::vector<std::string> p;
       commalist(option,p);
       
-      for(unsigned j=0;status&&(j<p.size());j++) {
+      for(unsigned j=0;comm_status&&(j<p.size());j++) {
 	std::vector<std::string> at;
 	param_cut(p[j],name,option);
 	commalist(option,at);
 	if (at.size()!=2) {
-	  status=false;
+	  comm_status=false;
 	  continue;
 	}
 	int act=atoi(at[0].c_str());
 	std::vector<int> tags;
 	if (!string2vector(log,at[1].c_str(),tags,0,INT_MAX,this)) {
-	  status=false;
+	  comm_status=false;
 	} else {
 	  // We should pass tags...
 	  model_cs->n=tags.size();
@@ -109,7 +109,7 @@ void Coverage_shared::receive_from_server()
 
 void Coverage_shared::communicate(int action)
 {
-  if (!status) {
+  if (!comm_status) {
     return;
   }
   if (write_data) {
