@@ -51,16 +51,18 @@ public:
   virtual float getE(int action);
   virtual void setAlphabet(Alphabet* a) {
     Learning::setAlphabet(a);
+    pos.resize(alphabet->getActionNames().size()+1);
   }
-  virtual signed long val() { return pos; }
-  virtual double fval() { return pos; }
+  virtual signed long val() { return pos[index_action]; }
+  virtual double fval() { return pos[index_action]; }
 
   static Function* creator(std::string params);
 
 protected:
   static Function* creator_function;
   Function* f;
-  int pos;
+  std::vector<int> pos;
+  int index_action;
 };
 
 #endif

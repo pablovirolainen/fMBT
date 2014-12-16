@@ -50,7 +50,7 @@ Function* Learn_action_function::creator(std::string params) {
   return Learn_action_function::creator_function;
 }
 
-Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(l,""),pos(0) {
+Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(l,""),index_action(0) {
   
   FunctionFactory::add_factory("pos",Learn_action_function::creator);
   creator_function=this;
@@ -72,24 +72,27 @@ void Learn_action_function::execute(int action) {
   if (suggested) {
     suggested=false;
     if (suggested_action==action) {
-      if (pos) {
-	pos--;
+      if (pos[suggested_action]) {
+	pos[suggested_action]--;
       }
     } else {
-      pos++;
+      pos[suggested_action]++;
     }
   }
 }
 
 float Learn_action_function::getF(int action) {
+  index_action=action;
   return f->fval();
 }
 
 float Learn_action_function::getC(int sug,int exe) {
+  index_action=sug;
   return f->fval();
 }
 
 float Learn_action_function::getE(int action) {
+  index_action=action;
   return f->fval();
 }
 
