@@ -44,14 +44,40 @@ float Learn_time_function::getE(int action) {
   return f->fval();
 }
 
-Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(l,"") {
+Function* Learn_action_function::creator_function=NULL;
+
+Function* Learn_action_function::creator(std::string params) {
+  return Learn_action_function::creator_function;
+}
+
+Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(l,""),pos(0) {
+  
+  FunctionFactory::add_factory("pos",Learn_action_function::creator);
+  creator_function=this;
+
   f=new_function(s);
+  FunctionFactory::remove_factory("pos");
+  creator_function=NULL;
+
   if (!f) {
-    status=false;
-    errormsg="Can't create function \""+s+"\"";
+    Learn_action::status=false;
+    Learn_action::errormsg="Can't create function \""+s+"\"";
   } else {
-    status=f->status;
-    errormsg=f->errormsg;
+    Learn_action::status=f->status;
+    Learn_action::errormsg=f->errormsg;
+  }
+}
+
+void Learn_action_function::execute(int action) {
+  if (suggested) {
+    suggested=false;
+    if (suggested_action==action) {
+      if (pos) {
+	pos--;
+      }
+    } else {
+      pos++;
+    }
   }
 }
 
