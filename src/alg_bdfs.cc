@@ -290,6 +290,25 @@ bool AlgBDFS::grows_faster(std::vector<int>& first_path, int first_path_start,
     return first_path_time < second_path_time;
 }
 
+static inline void _copy_input_actions(Function* m_function,
+				       std::vector<int>& action_candidates,
+				       int* input_actions,
+				       int input_action_count) {
+  if (m_function) {
+    int base;
+    if (m_function->prefer==Function::FLOAT) {
+      base=m_function->fval()*input_action_count;
+    } else {
+      base=m_function->val()%input_action_count;
+    }
+    for (int i = 0; i < input_action_count; i++)
+      action_candidates.push_back(input_actions[(base+i)%input_action_count]);
+  } else {
+    for (int i = 0; i < input_action_count; i++)
+      action_candidates.push_back(input_actions[i]);
+  }
+}
+
 double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
        (Model& model, std::vector<int>& path, int depth,double best_evaluation)
 {
@@ -319,14 +338,8 @@ double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
     }
 
     std::vector<int> action_candidates;
-    if (m_function) {
-      int base=m_function->val();
-      for (int i = 0; i < input_action_count; i++)
-	action_candidates.push_back(input_actions[(base+i)%input_action_count]);
-    } else {
-      for (int i = 0; i < input_action_count; i++)
-	action_candidates.push_back(input_actions[i]);
-    }
+
+    _copy_input_actions(m_function,action_candidates,input_actions,input_action_count);
 
     std::vector<int> best_path;
     unsigned int best_path_length = 0;
@@ -436,14 +449,9 @@ double AlgBDFS::_path_to_best_evaluation(Model& model, std::vector<int>& path, i
     }
 
     std::vector<int> action_candidates;
-    if (m_function) {
-      int base=m_function->val();
-      for (int i = 0; i < input_action_count; i++)
-	action_candidates.push_back(input_actions[(base+i)%input_action_count]);
-    } else {
-      for (int i = 0; i < input_action_count; i++)
-	action_candidates.push_back(input_actions[i]);
-    }
+
+    _copy_input_actions(m_function,action_candidates,input_actions,input_action_count);
+
     std::vector<int> best_path;
     unsigned int best_path_length = 0;
     int best_action = -1;
