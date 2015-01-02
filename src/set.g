@@ -33,7 +33,7 @@ typedef struct _node {
 } node;
 
 std::pair<int,int>* asize;
-int* mcount;
+int* mcount_;
 std::vector<std::string*> *set_ff,*set_tt,*set_dd;
 std::vector<std::pair<std::string*,std::pair<int,int> > >* filtervec;
 #define D_ParseNode_User node
@@ -45,7 +45,7 @@ testcase: setspec 'from' strvec 'to' strvec opt_drop '->' filtervec {
             *set_dd=*$5.strvec;
             *filtervec = *$7.filtervec;
             *asize=std::pair<int,int>($0.setspec.a,$0.setspec.b);
-            *mcount=$0.setspec.c;
+            *mcount_=$0.setspec.c;
             delete $2.strvec;
             delete $4.strvec;
             delete $5.strvec;

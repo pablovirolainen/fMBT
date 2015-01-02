@@ -28,7 +28,7 @@
 extern std::vector<std::string*> *set_ff,*set_tt,*set_dd;
 extern std::vector<std::pair<std::string*,std::pair<int,int> > >* filtervec;
 extern std::pair<int,int>* asize;
-extern int* mcount;
+extern int* mcount_;
 
 extern "C" {
   extern D_ParserTables parser_tables_set;
@@ -44,7 +44,7 @@ public:
     set_dd=&_d;
     filtervec = &_fv;
     asize=&allowed_set_size;
-    mcount=&max_count;
+    mcount_=&max_count;
     D_Parser *p = new_D_Parser(&parser_tables_set, 512);
     remove_force(params);
     bool ret=dparse(p,(char*)params.c_str(),strlen(params.c_str()));
