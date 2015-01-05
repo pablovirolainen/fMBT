@@ -150,10 +150,10 @@ version:
 	echo $(OS_TYPE) $(OS_VERSION)
 
 build%.o: %.c
-	gcc -c -o $@ $^
+	gcc $(CFLAGS) -c -o $@ $^
 
 %.o: %.c
-	$(CC) -c -o $@ $^
+	$(CC) $(CFLAGS) -c -o $@ $^
 
 make_dparser: $(addprefix build,$(MAKE_PARSER_OBJS)) $(addprefix build,$(LIBRARIES))
 	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ version.c $(LIBS)
