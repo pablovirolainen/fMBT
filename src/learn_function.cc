@@ -20,9 +20,12 @@
 #include "learn_function.hh"
 #include "helper.hh"
 #include "adapter.hh"
+#include "function_export.hh"
 
 Learn_time_function::Learn_time_function(Log&l,std::string&s): Learn_time(l,"") {
+  Export_double _exp("duration",&_duration);
   f=new_function(s);
+
   if (!f) {
     status=false;
     errormsg="Can't create function \""+s+"\"";
@@ -44,20 +47,19 @@ float Learn_time_function::getE(int action) {
   return f->fval();
 }
 
-Function* Learn_action_function::creator_function=NULL;
-
-Function* Learn_action_function::creator(std::string params) {
-  return Learn_action_function::creator_function;
+/*
+Function* Learn_action_function::creator(std::string params,void* p) {
+  Learn_action_function* f=(Learn_action_function*)p;
+  return new ;
 }
+*/
 
 Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(l,""),index_action(0) {
-  
-  FunctionFactory::add_factory("pos",Learn_action_function::creator);
-  creator_function=this;
+  Export_int _exp("pos",&learn_as_function);
 
+  //FunctionFactory::add_factory("pos",Learn_action_function::creator,this);
   f=new_function(s);
-  FunctionFactory::remove_factory("pos");
-  creator_function=NULL;
+  //FunctionFactory::remove_factory("pos");
 
   if (!f) {
     Learn_action::status=false;
@@ -66,6 +68,12 @@ Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(
     Learn_action::status=f->status;
     Learn_action::errormsg=f->errormsg;
   }
+}
+
+void Learn_action_function::suggest(int action) {
+  Learn_action::suggest(action);
+  index_action=action;
+  learn_as_function=pos[index_action];
 }
 
 void Learn_action_function::execute(int action) {
@@ -78,22 +86,34 @@ void Learn_action_function::execute(int action) {
     } else {
       pos[suggested_action]++;
     }
+  } else {
+    index_action=action;
   }
+  learn_as_function=pos[index_action];
 }
 
 float Learn_action_function::getF(int action) {
   index_action=action;
+  return pos[action];
+  /*
   return f->fval();
+  */
 }
 
 float Learn_action_function::getC(int sug,int exe) {
   index_action=sug;
+  return pos[sug];
+  /*
   return f->fval();
+  */
 }
 
 float Learn_action_function::getE(int action) {
   index_action=action;
+  return pos[action];
+  /*
   return f->fval();
+  */
 }
 
 FACTORY_DEFAULT_CREATOR(Learning, Learn_time_function, "time_function")

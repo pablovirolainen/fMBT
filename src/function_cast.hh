@@ -17,18 +17,45 @@
  *
  */
 
-#define _FUNCTION_INTERNAL_
-#include "function_pid.hh"
+#ifndef __FUNCTION_cast_HH__
+#include "function.hh"
 
-Function_pid::Function_pid(const std::string& param) {
-  prefer=INT;
-}
+#include <vector>
 
-#include <sys/types.h>
-#include <unistd.h>
+class Function_int: public Function {
+public:
+  Function_int(const std::string& param);
+  virtual ~Function_int() {
+    if (child) {
+      delete child;
+      child=NULL;
+    }
+  }
+  virtual signed long val() {
+    return child->val();
+  }
+  virtual double fval() {
+    return child->val();
+  }
+  Function* child;
+};
 
-signed long Function_pid::val() {
-  return getpid();
-}
+class Function_float: public Function {
+public:
+  Function_float(const std::string& param);
+  virtual ~Function_float() {
+    if (child) {
+      delete child;
+      child=NULL;
+    }
+  }
+  virtual signed long val() {
+    return child->fval();
+  }
+  virtual double fval() {
+    return child->fval();
+  }
+  Function* child;
+};
 
-FACTORY_DEFAULT_CREATOR(Function, Function_pid, "pid")
+#endif /* __FUNCTION_cast_HH__ */

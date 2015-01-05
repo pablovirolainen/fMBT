@@ -18,17 +18,32 @@
  */
 
 #define _FUNCTION_INTERNAL_
-#include "function_pid.hh"
 
-Function_pid::Function_pid(const std::string& param) {
-  prefer=INT;
+#include "function_cast.hh"
+
+Function_int::Function_int(const std::string& param) {
+  prefer = INT;
+  child=new_function(param);
+  if (!child) {
+    status=false;
+    errormsg="Can't create \""+param+"\"";
+  } else {
+    status=child->status;
+    errormsg=child->errormsg;
+  }
 }
 
-#include <sys/types.h>
-#include <unistd.h>
-
-signed long Function_pid::val() {
-  return getpid();
+Function_float::Function_float(const std::string& param) {
+  prefer = FLOAT;
+  child=new_function(param);
+  if (!child) {
+    status=false;
+    errormsg="Can't create \""+param+"\"";
+  } else {
+    status=child->status;
+    errormsg=child->errormsg;
+  }
 }
 
-FACTORY_DEFAULT_CREATOR(Function, Function_pid, "pid")
+FACTORY_DEFAULT_CREATOR(Function, Function_int, "int")
+FACTORY_DEFAULT_CREATOR(Function, Function_float, "float")
