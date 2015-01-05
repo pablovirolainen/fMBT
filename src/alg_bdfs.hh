@@ -46,7 +46,7 @@ public:
 
 protected:
     virtual double evaluate() = 0;
-    virtual void doExecute(int action) = 0;
+    virtual void doExecute(int action,bool push=true) = 0;
     virtual void undoExecute() = 0;
     int m_search_depth;
     bool m_learn_exec_times;
@@ -68,7 +68,7 @@ public:
     double search(Model& model, Coverage& coverage, std::vector<int>& path);
 protected:
     virtual double evaluate();
-    virtual void doExecute(int action);
+    virtual void doExecute(int action,bool push=true);
     virtual void undoExecute();
     Coverage* m_coverage;
     Model*    m_model;
@@ -97,7 +97,7 @@ public:
     double search(Model& model, int find_this_action, std::vector<int>& path);
 protected:
     virtual double evaluate();
-    virtual void doExecute(int action);
+    virtual void doExecute(int action,bool push=true);
     virtual void undoExecute();
     Model* m_model;
     int    m_find_this_action;
