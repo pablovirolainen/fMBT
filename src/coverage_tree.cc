@@ -80,7 +80,7 @@ void Coverage_Tree::pop()
   }
   push_restore.pop();
 
-  (*exec)=exec_restore.top();
+  (*exec).swap(exec_restore.top());
   exec_restore.pop();
 
   node_count=node_count_restore.back();
