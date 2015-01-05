@@ -34,6 +34,10 @@ fi
 
 AC_CHECK_LIB([rt], [clock_gettime])
 
+AC_ARG_ENABLE(tcmalloc, AC_HELP_STRING([--enable-tcmalloc],
+    [enable Google Performance Tools malloc implementation]), [enable_tcmalloc=${enableval}])
+AM_CONDITIONAL(TCMALLOC, test "${enable_tcmalloc}" = "yes")
+
 AC_ARG_ENABLE(rdrnd, AC_HELP_STRING([--enable-rdrnd],
     [enable intel hw random]), [enable_rdrnd=${enableval}])
 AM_CONDITIONAL(RDRND, test "${enable_rdrnd}" = "yes")

@@ -7,6 +7,10 @@ else
 bin_PROGRAMS = fmbt remote_adapter_loader fmbt-aalc fmbt-aalp fmbt-ucheck fmbt-log2lsts
 endif
 
+if TCMALLOC
+MALLOC_LIB = -ltcmalloc
+endif
+
 FMBTBUILDINFOCFLAGS=-DFMBTBUILDINFO='"@FMBTBUILDINFO@"'
 
 ##########################################
@@ -37,7 +41,7 @@ fmbt_aalc_CPPFLAGS	       = -Wall -pedantic -fPIC -I ./d -I `pwd` $(LIBEDIT_CFLA
 fmbt_aalp_CPPFLAGS	       = $(FMBTBUILDINFOCFLAGS) $(GLIB_CFLAGS)
 fmbt_log2lsts_CPPFLAGS	       = -Wall -pedantic -fPIC -I d -I `pwd` $(LIBEDIT_CFLAGS) $(GLIB_CFLAGS) $(GOBJECT_CFLAGS) $(XML2_CFLAGS) $(FMBTBUILDINFOCFLAGS)
 
-fmbt_LDFLAGS                   = -g $(JVMLDFLAGS) $(XML2_LIBS) $(GLIB_LIBS) $(GOBJECT_LIBS) $(LIBEDIT_LIBS) -lboost_regex -Wl,-E $(DLINK_OBJ)
+fmbt_LDFLAGS                   = -g $(JVMLDFLAGS) $(MALLOC_LIB) $(XML2_LIBS) $(GLIB_LIBS) $(GOBJECT_LIBS) $(LIBEDIT_LIBS) -lboost_regex -Wl,-E $(DLINK_OBJ)
 fmbt_ucheck_LDFLAGS            = -g $(XML2_LIBS) $(GLIB_LIBS) $(GOBJECT_LIBS) $(LIBEDIT_LIBS) -lboost_regex -Wl,-E $(DLINK_OBJ)
 fmbt_droid_LDFLAGS             = -Wl,-E $(DLINK_OBJ)
 remote_adapter_loader_LDFLAGS  = -g $(DLINK_OBJ) $(GLIB_LIBS)
