@@ -31,19 +31,18 @@
 
 extern int _g_simulation_depth_hint;
 
-AlgBDFS::AlgBDFS(int searchDepth, Learning* learn,Function* function):
-  m_search_depth(searchDepth), m_learn(learn),m_function(function) {
+AlgBDFS::AlgBDFS(Model& _model,int searchDepth, Learning* learn,Function* function):
+  m_search_depth(searchDepth), m_learn(learn),m_function(function),m_model(_model) {
   if (learn != NULL && ((Learn_proxy*)learn)->lt!=NULL) // TODO: learn knows how to learn exec times
     m_learn_exec_times = true;
   else
     m_learn_exec_times = false;
 }
 
-double AlgPathToBestCoverage::search(Model& model, Coverage& coverage, std::vector<int>& path)
+double AlgPathToBestCoverage::search(Coverage& coverage, std::vector<std::pair<int,double> >& path)
 {
     m_coverage = &coverage;
-    m_model = &model;
-    return path_to_best_evaluation(model, path, m_search_depth);
+    return path_to_best_evaluation(path, m_search_depth);
 }
 
 double AlgPathToBestCoverage::evaluate()
@@ -58,11 +57,11 @@ void AlgPathToBestCoverage::doExecute(int action,bool push)
     }
 
     if (push) {
-      m_model->push();
+      m_model.push();
       m_coverage->push();
     }
 
-    if (!m_model->execute(action)) { errormsg="Model execute error"; status=false; return;}
+    if (!m_model.execute(action)) { errormsg="Model execute error"; status=false; return;}
     m_coverage->execute(action);
 }
 
@@ -72,15 +71,14 @@ void AlgPathToBestCoverage::undoExecute()
         return;
     }
 
-    m_model->pop();
+    m_model.pop();
     m_coverage->pop();
 }
 
-double AlgPathToAction::search(Model& model, int find_this_action, std::vector<int> &path)
+double AlgPathToAction::search(int find_this_action, std::vector<std::pair<int,double> > &path)
 {
-    m_model = &model;
     m_find_this_action = find_this_action;
-    return path_to_best_evaluation(model, path, m_search_depth);
+    return path_to_best_evaluation(path, m_search_depth);
 }
 
 double AlgPathToAction::evaluate()
@@ -88,7 +86,7 @@ double AlgPathToAction::evaluate()
     int *actions;
     int action_count;
     /* Is action m_find_this_action available in the current state? */
-    action_count = m_model->getActions(&actions);
+    action_count = m_model.getActions(&actions);
 
     if (!status) {
         return 0.0;
@@ -104,31 +102,31 @@ double AlgPathToAction::evaluate()
 void AlgPathToAction::doExecute(int action,bool push)
 {
     if (push) {
-        m_model->push();
+        m_model.push();
     }
-    m_model->execute(action);
+    m_model.execute(action);
 }
 
 void AlgPathToAction::undoExecute()
 {
-    m_model->pop();
+    m_model.pop();
 }
 
-double AlgBDFS::path_to_best_evaluation(Model& model, std::vector<int>& path, int depth)
+double AlgBDFS::path_to_best_evaluation(std::vector<std::pair<int,double> >& path, int depth)
 {
     volatile double current_score = evaluate();
     volatile double best_score = 0;
-    std::vector<int> hinted_path;
+    std::vector<std::pair<int,double> > hinted_path;
 
-    if (!model.status || !status) {
-        if (!model.status)
-	  errormsg = "Model error: "+model.errormsg;
+    if (!m_model.status || !status) {
+        if (!m_model.status)
+	  errormsg = "Model error: "+m_model.errormsg;
         status=false;
         return 0.0;
     }
 
     _g_simulation_depth_hint = depth;
-    model.push();
+    m_model.push();
     _g_simulation_depth_hint = 0;
 
     if (path.size() > 0) {
@@ -150,15 +148,15 @@ double AlgBDFS::path_to_best_evaluation(Model& model, std::vector<int>& path, in
         int invalid_step = -1;
 	bool push_execute=true;
         for (unsigned int pos = 0; pos < path.size() && invalid_step == -1; pos++) {
-	    doExecute(path[pos],push_execute);
+	    doExecute(path[pos].first,push_execute);
 	    push_execute=false;
             if (status == false) {
                 invalid_step = pos;
                 status = true;
             }
-            if (!model.status) {
+            if (!m_model.status) {
                 status = false;
-		errormsg = "Model: " + model.errormsg;
+		errormsg = "Model: " + m_model.errormsg;
                 return 0.0;
             }
         }
@@ -167,33 +165,27 @@ double AlgBDFS::path_to_best_evaluation(Model& model, std::vector<int>& path, in
             // Hinted path is no more valid, throw it away.
             path.resize(0);
 	    if (!push_execute) {
-	      undoExecute();
-	    }
-	    /*
-            for (int current_step = invalid_step; current_step > -1; current_step--)
 	        undoExecute();
-	    */
+	    }
         } else {
-            std::vector<int> additional_path;
+	    std::vector<std::pair<int,double> > additional_path;
 
-            best_score = _path_to_best_evaluation(model, additional_path, depth - path.size(), current_score);
+            best_score = _path_to_best_evaluation(additional_path, depth - path.size(), current_score);
 
-            if (!model.status || !status) {
-	      if (!model.status)
-		errormsg = "Model error: "+model.errormsg;
-	      status=false;
-	      return 0.0;
+            if (!m_model.status || !status) {
+	        if (!m_model.status)
+		    errormsg = "Model error: "+m_model.errormsg;
+		status=false;
+		return 0.0;
             }
 
 	    if (!push_execute) {
-	      undoExecute();
+	        undoExecute();
 	    }
 
-            //for (unsigned int i = 0; i < path.size(); i++) undoExecute();
-	    
-            if (!model.status || !status) {
-	      if (!model.status)
-		errormsg = "Model error: "+model.errormsg;
+            if (!m_model.status || !status) {
+	      if (!m_model.status)
+		errormsg = "Model error: "+m_model.errormsg;
 	      status=false;
 	      return 0.0;
             }
@@ -207,12 +199,12 @@ double AlgBDFS::path_to_best_evaluation(Model& model, std::vector<int>& path, in
         }
     }
 
-    best_score = _path_to_best_evaluation(model, path, depth, current_score);
-    model.pop();
+    best_score = _path_to_best_evaluation( path, depth, current_score);
+    m_model.pop();
 
-    if (!model.status || !status) {
-      if (!model.status)
-	errormsg = "Model error: "+model.errormsg;
+    if (!m_model.status || !status) {
+      if (!m_model.status)
+	  errormsg = "Model error: "+m_model.errormsg;
       status=false;
       return 0.0;
     }
@@ -231,31 +223,30 @@ double AlgBDFS::path_to_best_evaluation(Model& model, std::vector<int>& path, in
     return best_score;
 }
 
-bool AlgBDFS::grows_first(std::vector<int>& first_path, int first_path_start,
-                          std::vector<int>& second_path, int second_path_start)
+bool AlgBDFS::grows_first(std::vector<std::pair<int,double> >& first_path, int first_path_start,
+                          std::vector<std::pair<int,double> >& second_path, int second_path_start)
 {
     if (first_path.size() != second_path.size()) {
-      errormsg="first_path.size() != second_path.size()";
-      status=false;
-      return false;
+        errormsg="first_path.size() != second_path.size()";
+	status=false;
+	return false;
     }
 
     volatile double current_score = evaluate();
 
-    first_path.push_back(first_path_start);
-    second_path.push_back(second_path_start);
+    first_path.push_back(std::pair<int,double>(first_path_start,0.0));
+    second_path.push_back(std::pair<int,double>(second_path_start,0.0));
 
     int first_difference = first_path.size();
     volatile double first_score;
     bool push_me=true;
     for (int i = first_path.size() - 1; i >= 0; i--) {
-        doExecute(first_path[i],push_me);
+        doExecute(first_path[i].first,push_me);
        	push_me=false;
         first_score = evaluate();
 
-        if (!status) {
-          return false;
-        }
+        if (!status)
+            return false;
 
         if (first_score > current_score) {
             first_difference = i;
@@ -263,22 +254,20 @@ bool AlgBDFS::grows_first(std::vector<int>& first_path, int first_path_start,
         }
     }
     if (first_difference == (int)first_path.size()) {
-      errormsg = "first_difference == (int)first_path.size() "+to_string(first_difference);
-      status=false; return false;
+        errormsg = "first_difference == (int)first_path.size() "+to_string(first_difference);
+	status=false;
+	return false;
     }
 
-    /*
-    for (int j = first_path.size() - 1; j >= first_difference; j--) undoExecute();
-    */
     if (!push_me) {
-      undoExecute();
-      push_me=true;
+        undoExecute();
+	push_me=true;
     }
 
     int second_difference = second_path.size();
     volatile double second_score;
     for (int i = second_path.size() - 1; i >= 0; i--) {
-        doExecute(second_path[i],push_me);
+        doExecute(second_path[i].first,push_me);
 	push_me=false;
         second_score = evaluate();
         if (second_score > current_score) {
@@ -287,35 +276,32 @@ bool AlgBDFS::grows_first(std::vector<int>& first_path, int first_path_start,
         }
     }
     if (second_difference == (int)second_path.size()) {
-      errormsg = "second_difference == (int)second_path.size()";
-      status=false; return false;
+        errormsg = "second_difference == (int)second_path.size()";
+	status=false;
+	return false;
     }
 
     if (!push_me) {
       undoExecute();
     }
-    /*
-    for (int j = second_path.size() - 1; j >= second_difference; j--) undoExecute();
-    */
     first_path.pop_back();
     second_path.pop_back();
 
-    if (first_difference > second_difference 
-	/* || (first_difference==second_difference && first_score > second_score)*/) return true;
+    if (first_difference > second_difference) return true;
     else return false;
 }
 
-bool AlgBDFS::grows_faster(std::vector<int>& first_path, int first_path_start,
-                           std::vector<int>& second_path, int second_path_start)
+bool AlgBDFS::grows_faster(std::vector<std::pair<int,double> >& first_path, int first_path_start,
+                           std::vector<std::pair<int,double> >& second_path, int second_path_start)
 {
     float first_path_time = m_learn->getE(first_path_start);
     float second_path_time = m_learn->getE(second_path_start);
 
     for (int i = first_path.size() - 1; i >= 0; i--) {
-        first_path_time += m_learn->getE(first_path[i]);
+        first_path_time += m_learn->getE(first_path[i].first);
     }
     for (int i = second_path.size() - 1; i >= 0; i--) {
-        second_path_time += m_learn->getE(second_path[i]);
+        second_path_time += m_learn->getE(second_path[i].first);
     }
 
     return first_path_time < second_path_time;
@@ -327,22 +313,22 @@ static inline void _copy_input_actions(Function* m_function,
 				       int input_action_count) {
   action_candidates.reserve(input_action_count);
   if (m_function) {
-    int base;
-    if (m_function->prefer==Function::FLOAT) {
-      base=m_function->fval()*input_action_count;
-    } else {
-      base=m_function->val()%input_action_count;
-    }
-    for (int i = 0; i < input_action_count; i++)
-      action_candidates.push_back(input_actions[(base+i)%input_action_count]);
+      int base;
+      if (m_function->prefer==Function::FLOAT) {
+	  base=m_function->fval()*input_action_count;
+      } else {
+	  base=m_function->val()%input_action_count;
+      }
+      for (int i = 0; i < input_action_count; i++)
+	  action_candidates.push_back(input_actions[(base+i)%input_action_count]);
   } else {
-    for (int i = 0; i < input_action_count; i++)
-      action_candidates.push_back(input_actions[i]);
+      for (int i = 0; i < input_action_count; i++)
+	  action_candidates.push_back(input_actions[i]);
   }
 }
 
 double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
-       (Model& model, std::vector<int>& path, int depth,double best_evaluation)
+(std::vector<std::pair<int,double> >& path, int depth,double best_evaluation)
 {
     int *input_actions = NULL;
     int input_action_count = 0;
@@ -361,10 +347,10 @@ double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
         return current_state_evaluation;
 
     /* Recursive search for the best path */
-    input_action_count = model.getIActions(&input_actions);
+    input_action_count = m_model.getIActions(&input_actions);
 
-    if (!model.status) {
-      errormsg = "Model error: "+model.errormsg;
+    if (!m_model.status) {
+        errormsg = "Model error: "+m_model.errormsg;
         status=false;
         return 0.0;
     }
@@ -373,12 +359,12 @@ double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
 
     _copy_input_actions(m_function,action_candidates,input_actions,input_action_count);
 
-    std::vector<int> best_path;
+    std::vector<std::pair<int,double> > best_path;
     unsigned int best_path_length = 0;
     int best_action = -1;
     std::vector<double> pre_evaluation;
     std::vector<double> an_evaluation;
-    std::vector<std::vector<int> > a_path;
+    std::vector<std::vector<std::pair<int,double> > > a_path;
 
     an_evaluation.resize(input_action_count+1);
     a_path.resize(input_action_count+1);
@@ -386,47 +372,47 @@ double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
 
     for (int i = 0; i < input_action_count; i++)
     {
-      doExecute(action_candidates[i]);
-      
-      a_path[i].resize(0);
-      pre_evaluation.push_back(_path_to_best_evaluation(model, a_path[i], depth - 1, best_evaluation));
-      undoExecute();
-      
-      if (!model.status || !status) {
-	if (!model.status)
-	  errormsg = "Model error: "+model.errormsg;
-	status=false;
-	return 0.0;
-      }
+        doExecute(action_candidates[i]);
+
+	a_path[i].resize(0);
+	pre_evaluation.push_back(_path_to_best_evaluation(a_path[i], depth - 1, best_evaluation));
+	undoExecute();
+	
+	if (!m_model.status || !status) {
+	    if (!m_model.status)
+	        errormsg = "Model error: "+m_model.errormsg;
+	    status=false;
+	    return 0.0;
+	}
     }
 
     if (m_learn) {
-    for (int i = 0; i < input_action_count; i++)
-      {    
-	float weight_total=0.0;
-	
-	for (int j = 0; j < input_action_count; j++)
+        for (int i = 0; i < input_action_count; i++)
 	  {
-	    float weight=m_learn?m_learn->getC(action_candidates[i],action_candidates[j]):0.0;
+	    float weight_total=0.0;
 
-	    if (i==j) {
-	      weight+=1.0;
+	    for (int j = 0; j < input_action_count; j++)
+	      {
+		float weight=m_learn?m_learn->getC(action_candidates[i],action_candidates[j]):0.0;
+
+		if (i==j) {
+		    weight+=1.0;
+		}
+		weight_total+=weight;
+
+		an_evaluation[i]+=pre_evaluation[j]*weight;
+	      }
+	    if (weight_total>0.0) {
+	        an_evaluation[i]=an_evaluation[i]/weight_total;
+	    } else {
+	        an_evaluation[i]=0.0;
 	    }
-	    weight_total+=weight;
-
-	    an_evaluation[i]+=pre_evaluation[j]*weight;
 	  }
-	if (weight_total>0.0) {
-	  an_evaluation[i]=an_evaluation[i]/weight_total;
-	} else {
-	  an_evaluation[i]=0.0;
-	}
-      }
     } else {
-      an_evaluation.swap(pre_evaluation);
+        an_evaluation.swap(pre_evaluation);
     }
-    
-    for (int i = 0; i < input_action_count; i++) {    
+
+    for (int i = 0; i < input_action_count; i++) {
         if (an_evaluation[i] > current_state_evaluation &&
             (an_evaluation[i] > best_evaluation ||
              (an_evaluation[i] == best_evaluation &&
@@ -434,7 +420,7 @@ double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
                (best_action > -1 &&
                 ((m_learn_exec_times && grows_faster(a_path[i], action_candidates[i], best_path, best_action)) ||
                  (a_path[i].size() < best_path_length ||
-                  (a_path[i].size() == best_path_length &&
+                  (best_path_length>0 && a_path[i].size() == best_path_length &&
                    grows_first(a_path[i], action_candidates[i], best_path, best_action)))))))))
         {
             best_path_length = a_path[i].size();
@@ -447,13 +433,13 @@ double AlgPathToAdaptiveCoverage::_path_to_best_evaluation
     if ((int)best_action > -1) {
         path.swap(best_path);
 	path.reserve(m_search_depth);
-        path.push_back(best_action);
+        path.push_back(std::pair<int,double>(best_action,(double)current_state_evaluation)); // FIXME!
         return best_evaluation;
     }
     return current_state_evaluation;
 }
 
-double AlgBDFS::_path_to_best_evaluation(Model& model, std::vector<int>& path, int depth,
+double AlgBDFS::_path_to_best_evaluation(std::vector<std::pair<int,double> >& path, int depth,
                                          double best_evaluation)
 {
     int *input_actions = NULL;
@@ -473,10 +459,10 @@ double AlgBDFS::_path_to_best_evaluation(Model& model, std::vector<int>& path, i
         return current_state_evaluation;
 
     /* Recursive search for the best path */
-    input_action_count = model.getIActions(&input_actions);
+    input_action_count = m_model.getIActions(&input_actions);
 
-    if (!model.status) {
-        errormsg = "Model error:"+model.errormsg;
+    if (!m_model.status) {
+        errormsg = "Model error:"+m_model.errormsg;
 	status=false;
 	return 0.0;
     }
@@ -485,26 +471,26 @@ double AlgBDFS::_path_to_best_evaluation(Model& model, std::vector<int>& path, i
 
     _copy_input_actions(m_function,action_candidates,input_actions,input_action_count);
 
-    std::vector<int> best_path;
+    std::vector<std::pair<int,double> > best_path;
     unsigned int best_path_length = 0;
     int best_action = -1;
     for (int i = 0; i < input_action_count; i++)
     {
-        std::vector<int> a_path;
+        std::vector<std::pair<int,double> > a_path;
         volatile double an_evaluation;
 
         doExecute(action_candidates[i]);
 
         a_path.resize(0);
-        an_evaluation = _path_to_best_evaluation(model, a_path, depth - 1, best_evaluation);
+        an_evaluation = _path_to_best_evaluation(a_path, depth - 1, best_evaluation);
 
         undoExecute();
 
-        if (!model.status || !status) {
-          if (!model.status)
-            errormsg = "Model error:"+model.errormsg;
-          status=false;
-          return 0.0;
+        if (!m_model.status || !status) {
+            if (!m_model.status)
+	        errormsg = "Model error:"+m_model.errormsg;
+	    status=false;
+	    return 0.0;
         }
 
         if (an_evaluation > current_state_evaluation &&
@@ -514,7 +500,7 @@ double AlgBDFS::_path_to_best_evaluation(Model& model, std::vector<int>& path, i
                (best_action > -1 &&
                 ((m_learn_exec_times && grows_faster(a_path, action_candidates[i], best_path, best_action)) ||
 		 (a_path.size() < best_path_length ||
-		  (a_path.size() == best_path_length &&
+		  (best_path_length>0 && a_path.size() == best_path_length &&
 		   grows_first(a_path, action_candidates[i], best_path, best_action)))))))))
         {
             best_path_length = a_path.size();
@@ -527,7 +513,7 @@ double AlgBDFS::_path_to_best_evaluation(Model& model, std::vector<int>& path, i
     if ((int)best_action > -1) {
         path.swap(best_path);
 	path.reserve(m_search_depth);
-        path.push_back(best_action);
+        path.push_back(std::pair<int,double>(best_action,(double)current_state_evaluation)); // FIXME!
         return best_evaluation;
     }
     return current_state_evaluation;

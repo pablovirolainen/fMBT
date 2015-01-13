@@ -881,28 +881,28 @@ void Test_engine::interactive()
         if (strncmp(s,"?a",2) == 0) {
           int num = std::atoi(s+2);
           int search_depth = 7;
-          std::vector<int> path;
-          AlgPathToAction alg(search_depth);
-          double score = alg.search(*current_model, num, path);
+          std::vector<std::pair<int,double> > path;
+          AlgPathToAction alg(*current_model,search_depth);
+          double score = alg.search(num, path);
           if (score != 1.0) {
               fprintf(stderr,"No path found to action %d within search depth %d\n", num, search_depth);
           } else {
               fprintf(stderr,"Path to execute action %s:\n", current_model->getActionName(num).c_str());
               for (unsigned int i = 0; i < path.size(); i++) {
-                  fprintf(stderr,"%s\n", current_model->getActionName(path[i]).c_str());
+                  fprintf(stderr,"%s\n", current_model->getActionName(path[i].first).c_str());
               }
           }
           break;
         } else
         if (strncmp(s,"?c",2) == 0) {
           int num = std::atoi(s+2);
-          std::vector<int> path;
-          AlgPathToBestCoverage alg(num);
+          std::vector<std::pair<int,double> > path;
+          AlgPathToBestCoverage alg(*current_model,num);
           Coverage* coverage = heuristic.get_coverage();
-          double score = alg.search(*current_model, *coverage, path);
+          double score = alg.search(*coverage, path);
           fprintf(stderr,"Coverage %f achievable with path:\n", score);
           for (unsigned int i = 0; i < path.size(); i++) {
-            fprintf(stderr,"%s\n", current_model->getActionName(path[i]).c_str());
+            fprintf(stderr,"%s\n", current_model->getActionName(path[i].first).c_str());
           }
           break;
         }

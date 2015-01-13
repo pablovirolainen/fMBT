@@ -65,6 +65,57 @@ End_condition* new_end_condition(Verdict::Verdict v,const std::string& s,Conf* c
   return ret;
 }
 
+End_condition_duration::End_condition_duration
+(Conf* _conf,Verdict::Verdict v, const std::string& p):
+    End_condition(_conf,v,p) {
+    counter = DURATION;
+    er="time limit reached";
+    status=true;
+    param_time = -1;
+#ifndef DROI
+    char* out = NULL;
+    int stat;
+    std::string ss = "date --date='" + param + "' +%s.%N";
+
+    if (g_spawn_command_line_sync(ss.c_str(), &out, NULL, &stat, NULL)) {
+      if (!stat) {
+	// Store seconds to param_time and microseconds to param_long
+	param_time = atoi(out);
+	param_long = (strtod(out, NULL) - param_time) * 1000000;
+	status = true;
+	if (_conf) {
+	  struct timeval tv;
+	  gettime(&tv);
+	  _conf->log.debug("Until %i,current %i",param_time,tv.tv_sec);
+	}
+      } else {
+	errormsg = "Parsing 'duration' parameter '" + param + "' failed.";
+	errormsg += " Date returned an error when executing '" + ss + "'";
+	status = false;
+      }
+    } else {
+      errormsg = "Parsing 'duration' parameter '" + param + "' failed, could not execute '";
+      errormsg += ss + "'";
+      status = false;
+    }
+    if (out) {
+      g_free(out);
+    }
+#else
+    char* endp;
+    long r = strtol(param.c_str(), &endp, 10);
+    if (*endp == 0) {
+      param_time = r;
+      status = true;
+    } else {
+      // Error on str?
+      errormsg = "Parsing duration '" + param + "' failed.";
+      status = false;
+    }
+#endif
+  }
+
+
 End_condition_coverage::End_condition_coverage(Conf* _conf,Verdict::Verdict v, const std::string& p):
   End_condition(_conf,v,p) {
   counter = COVERAGE;

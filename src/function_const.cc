@@ -20,7 +20,7 @@
 #define _FUNCTION_INTERNAL_
 #include "function_const.hh"
 
-Function_const::Function_const(const std::string& param) {
+Function_const::Function_const(const std::string& param):Function() {
   char* endp;
   if (param=="") {
     errormsg="empty constant?";
@@ -35,6 +35,7 @@ Function_const::Function_const(const std::string& param) {
       errormsg="incalid charasters at const ";
       errormsg+=endp;      
     } else {
+      prefer=FLOAT;
       stored_val=stored_fval;
     }
   } else {

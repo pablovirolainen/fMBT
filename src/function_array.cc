@@ -19,7 +19,6 @@
 
 #define _FUNCTION_INTERNAL_
 #include "function_array.hh"
-#include "function_random.hh"
 #include "helper.hh"
 
 Function_array::Function_array(const std::string& param):index(NULL),float_index(false),modulo(false) {
@@ -56,8 +55,8 @@ Function_array::Function_array(const std::string& param):index(NULL),float_index
     errormsg=index->errormsg;
   }
 
-  if (dynamic_cast<Function_random*>(index)) {
-      float_index=true;
+  if (index->prefer==FLOAT) {
+    float_index=true;
   }
 
 }

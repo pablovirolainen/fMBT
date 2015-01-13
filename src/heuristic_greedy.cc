@@ -102,7 +102,7 @@ Heuristic_greedy::~Heuristic_greedy()
 bool Heuristic_greedy::execute(int action)
 {
   if (m_path.size() > 0) {
-    int planned_action = m_path.back();
+    int planned_action = m_path.back().first;
     if (planned_action != action) // invalidate planned path
       m_path.resize(0);
     else
@@ -193,8 +193,8 @@ int Heuristic_greedy::getIAction()
 
       /* Spend more time for better coverage */
       if (adaptive) {
-	AlgPathToAdaptiveCoverage alg(m_search_depth, learn, randomise_function);
-	score = alg.search(*model, *my_coverage, m_path);
+	AlgPathToAdaptiveCoverage alg(*model,m_search_depth, learn, randomise_function);
+	score = alg.search(*my_coverage, m_path);
 
 	end_condition=(score<=current_score);
 
@@ -205,8 +205,8 @@ int Heuristic_greedy::getIAction()
 	  goto done;
 	}
       } else {
-	AlgPathToBestCoverage alg(m_search_depth, learn, randomise_function);
-	score = alg.search(*model, *my_coverage, m_path);
+	AlgPathToBestCoverage alg(*model,m_search_depth, learn, randomise_function);
+	score = alg.search(*my_coverage, m_path);
 
 	end_condition=(score<=current_score);
 
@@ -226,7 +226,7 @@ int Heuristic_greedy::getIAction()
     if (m_path.size() > 0) {
       log.debug("path %i",m_path.back());
       bool broken = true;
-      retval = m_path.back();
+      retval = m_path.back().first;
       for(int j = 0; j < input_action_count; j++) {
         if (input_actions[j] == retval) {
           broken=false;
@@ -241,6 +241,8 @@ int Heuristic_greedy::getIAction()
       goto done;
     }
   }
+
+  log.debug("Random selection");
 
   /* Fall back to random selection. */
   retval = input_actions[(int)(r->drand48()*input_action_count)];

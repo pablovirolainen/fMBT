@@ -76,7 +76,7 @@ namespace {
     return aal::storage->begin()->second;
   }
 
-  Adapter* adapter_creator(Log& l,std::string params) {
+  Adapter* adapter_creator(Log& l,std::string params,void*) {
     aal* al=al_helper();
 
     if (al) {
@@ -85,7 +85,7 @@ namespace {
     return NULL;
   }
 
-  Model* model_creator(Log& l,std::string params) {
+  Model* model_creator(Log& l,std::string params,void*) {
     aal* al=al_helper();
 
     if (al) {

@@ -41,10 +41,11 @@ protected:
   Function* f;
 };
 
-class Learn_action_function: public Learn_action,public Function {
+class Learn_action_function: public Learn_action {
 public:
   Learn_action_function(Log&l,std::string&s);
   virtual ~Learn_action_function() { }
+  virtual void suggest(int action);
   virtual void execute(int action);
   virtual float getF(int action);
   virtual float getC(int sug,int exe);
@@ -53,16 +54,13 @@ public:
     Learning::setAlphabet(a);
     pos.resize(alphabet->getActionNames().size()+1);
   }
-  virtual signed long val() { return pos[index_action]; }
-  virtual double fval() { return pos[index_action]; }
-
-  static Function* creator(std::string params);
+  static Function* creator(std::string params,void*);
 
 protected:
-  static Function* creator_function;
   Function* f;
   std::vector<int> pos;
   int index_action;
+  int learn_as_function;
 };
 
 #endif

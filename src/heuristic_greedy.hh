@@ -42,7 +42,7 @@ public:
 private:
   int m_search_depth;
   bool m_burst;
-  std::vector<int> m_path;
+  std::vector<std::pair<int,double> > m_path;
   Random* r;
   Function* randomise_function;
 protected:
@@ -59,7 +59,6 @@ public:
     adaptive=false;
   }
   virtual ~Heuristic_lookahead() {}
-
 };
 
 class Heuristic_adaptive_lookahead: public Heuristic_greedy {

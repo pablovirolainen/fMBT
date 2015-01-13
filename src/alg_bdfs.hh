@@ -34,7 +34,7 @@ class Function;
 class AlgBDFS: public Writable
 {
 public:
-    AlgBDFS(int searchDepth, Learning* learn,Function* function);
+    AlgBDFS(Model& _model,int searchDepth, Learning* learn,Function* function);
     virtual ~AlgBDFS() {};
 
     /** \brief returns the shortest path that results in  the best evaluation
@@ -42,7 +42,7 @@ public:
      * \param path (output parameter) the best path if one was found, otherwise empty
      * \return the evaluation value for the path
      */
-    double path_to_best_evaluation(Model& model, std::vector<int>& path, int depth);
+    double path_to_best_evaluation(std::vector<std::pair<int,double> >& path, int depth);
 
 protected:
     virtual double evaluate() = 0;
@@ -52,54 +52,53 @@ protected:
     bool m_learn_exec_times;
     Learning*  m_learn;
     Function* m_function;
-    double _path_to_best_evaluation(Model& model, std::vector<int>& path, int depth, double best_evaluation);
-    bool grows_first(std::vector<int>&, int, std::vector<int>&, int);
-    bool grows_faster(std::vector<int>&, int, std::vector<int>&, int);
+    double _path_to_best_evaluation(std::vector<std::pair<int,double> >& path, int depth, double best_evaluation);
+    bool grows_first(std::vector<std::pair<int,double> >&, int, std::vector<std::pair<int,double> >&, int);
+    bool grows_faster(std::vector<std::pair<int,double> >&, int, std::vector<std::pair<int,double> >&, int);
+    Model& m_model;
 };
 
 
 class AlgPathToBestCoverage: public AlgBDFS
 {
 public:
-    AlgPathToBestCoverage(int searchDepth = 3, Learning* learn = NULL, Function* function = NULL):
-      AlgBDFS(searchDepth, learn,function) {}
+    AlgPathToBestCoverage(Model& _model,int searchDepth = 3, Learning* learn = NULL, Function* function = NULL):
+      AlgBDFS(_model,searchDepth, learn,function) {}
     virtual ~AlgPathToBestCoverage() {};
 
-    double search(Model& model, Coverage& coverage, std::vector<int>& path);
+    double search(Coverage& coverage, std::vector<std::pair<int,double> >& path);
 protected:
     virtual double evaluate();
     virtual void doExecute(int action,bool push=true);
     virtual void undoExecute();
     Coverage* m_coverage;
-    Model*    m_model;
 };
 
 
 class AlgPathToAdaptiveCoverage: public AlgPathToBestCoverage
 {
 public:
-    AlgPathToAdaptiveCoverage(int searchDepth = 3, Learning* learn = NULL, Function* function = NULL):
-      AlgPathToBestCoverage(searchDepth, learn) {}
+    AlgPathToAdaptiveCoverage(Model& _model,int searchDepth = 3, Learning* learn = NULL, Function* function = NULL):
+      AlgPathToBestCoverage(_model,searchDepth, learn) {}
     virtual ~AlgPathToAdaptiveCoverage() {};
 protected:
-    double _path_to_best_evaluation(Model& model, std::vector<int>& path, int depth, double best_evaluation);
+    double _path_to_best_evaluation(std::vector<std::pair<int,double> >& path, int depth, double best_evaluation);
 };
 
 
 class AlgPathToAction: public AlgBDFS
 {
 public:
-    AlgPathToAction(int searchDepth = 3, Learning* learn = NULL, 
+    AlgPathToAction(Model& _model,int searchDepth = 3, Learning* learn = NULL, 
 		    Function* function = NULL):
-      AlgBDFS(searchDepth, learn,function) {}
+      AlgBDFS(_model,searchDepth, learn,function) {}
     virtual ~AlgPathToAction() {}
 
-    double search(Model& model, int find_this_action, std::vector<int>& path);
+    double search(int find_this_action, std::vector<std::pair<int,double> >& path);
 protected:
     virtual double evaluate();
     virtual void doExecute(int action,bool push=true);
     virtual void undoExecute();
-    Model* m_model;
     int    m_find_this_action;
 };
 
