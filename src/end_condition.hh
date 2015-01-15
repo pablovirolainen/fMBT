@@ -277,7 +277,7 @@ public:
 class End_condition_dummy: public End_condition {
 public:
   End_condition_dummy(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p):c(NULL) {
+    End_condition(_conf,v,p),c(NULL) {
     counter = DUMMY;
     status = true;
   }
