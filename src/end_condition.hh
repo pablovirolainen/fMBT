@@ -143,7 +143,8 @@ public:
       errormsg=param+" not a valid step limit requirement";
       return;
     }
-    if (param_long>=0 && endp[0]==0) {
+
+    if (param_long>=0 && (endp==NULL || endp[0]==0)) {
       status = true;
     } else {
       errormsg=param+" is not a valid step count";
@@ -276,7 +277,7 @@ public:
 class End_condition_dummy: public End_condition {
 public:
   End_condition_dummy(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
+    End_condition(_conf,v,p):c(NULL) {
     counter = DUMMY;
     status = true;
   }
