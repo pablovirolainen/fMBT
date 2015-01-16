@@ -82,11 +82,14 @@ int  Adapter_model::observe(std::vector<int> &action,bool block)
 {
   int* act,*iact;
   int actions=-model->getIActions(&iact)+model->getActions(&act);
-  int i=1+r->rand()%actions;
-  int a;
+
   if (!actions) {
     return false;
   }
+
+  int i=1+r->rand()%actions;
+  int a;
+
   a=-1;
   while (i) {
     a++;
