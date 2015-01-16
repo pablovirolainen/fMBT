@@ -50,7 +50,8 @@ public:
     DUMMY
   } Counter;
 
-  End_condition(Conf* _conf,Verdict::Verdict v, const std::string& p);
+  End_condition(Conf* _conf,Counter _counter,
+		Verdict::Verdict v, const std::string& p);
   virtual ~End_condition();
 
   virtual std::string stringify() {
@@ -132,8 +133,7 @@ public:
 class End_condition_steps: public End_condition {
 public:
   End_condition_steps(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = STEPS;
+    End_condition(_conf,STEPS,v,p) {
     er="step limit reached";
     char* endp;
 
@@ -161,8 +161,7 @@ public:
 class End_condition_tag: public End_condition {
 public:
   End_condition_tag(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = STATETAG;
+    End_condition(_conf,STATETAG,v,p) {
     er="tag reached";
     status = true;
   }
@@ -181,8 +180,7 @@ public:
 class End_condition_noprogress: public End_condition {
 public:
   End_condition_noprogress(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = NOPROGRESS;
+    End_condition(_conf,NOPROGRESS,v,p) {
     er="no progress limit reached";
     param_long = atol(param.c_str());
     status = true;
@@ -199,8 +197,7 @@ public:
 class End_condition_deadlock: public End_condition {
 public:
   End_condition_deadlock(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = DEADLOCK;
+    End_condition(_conf,DEADLOCK,v,p) {
     er="deadlock reached";
     status = true;
   }
@@ -217,8 +214,7 @@ public:
 class End_status_error: public End_condition {
 public:
   End_status_error(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = STATUS;
+    End_condition(_conf,STATUS,v,p) {
     status = true;
   }
 
@@ -229,8 +225,7 @@ public:
 class End_condition_action: public End_condition {
 public:
   End_condition_action(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = ACTION;
+    End_condition(_conf,ACTION,v,p) {
     er="executed break action";
     status = true;
   }
@@ -277,8 +272,7 @@ public:
 class End_condition_dummy: public End_condition {
 public:
   End_condition_dummy(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p),c(NULL) {
-    counter = DUMMY;
+    End_condition(_conf,DUMMY,v,p),c(NULL) {
     status = true;
   }
 
@@ -295,8 +289,7 @@ public:
 class End_condition_tagverify: public End_condition {
 public:
   End_condition_tagverify(Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = TAGVERIFY;
+    End_condition(_conf,TAGVERIFY,v,p) {
     status = true;
   }
   bool evaluate_filter(std::vector<std::string>& tags);

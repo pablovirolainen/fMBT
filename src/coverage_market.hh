@@ -178,15 +178,8 @@ public:
 
   class unit_perm: public unit {
   public:
-    unit_perm(int i,Coverage_Market* _m) {
-      p=to_string(i);
-      m=_m;
+    unit_perm(int i,Coverage_Market* _m):m(_m),p(to_string(i)) {
       reset();
-      /*
-      child=new Coverage_Tree(l,p);
-      child->set_model(m->get_model());
-      value.second=child->max_count;
-      */
       l.ref();
     }
 
@@ -393,7 +386,7 @@ public:
       std::map<std::vector<eunit >, int>::iterator e;
       i=tcount_save[push_depth].begin();
       e=tcount_save[push_depth].end();
-      for(;i!=e;i++) {
+      for(;i!=e;++i) {
 	if (i->second) {
 	  tcount[i->first] = i->second;
 	} else {

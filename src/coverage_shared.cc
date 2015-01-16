@@ -22,7 +22,6 @@
 void Coverage_shared::receive_from_server()
 {
   // Read number of active clients
-  std::vector<std::string> tmp;
 
   char* s = NULL;
   char* ss;

@@ -27,9 +27,9 @@
 
 #include "helper.hh"
 
-End_condition::End_condition(Conf* _conf,
+End_condition::End_condition(Conf* _conf,Counter _counter,
 			     Verdict::Verdict v, const std::string& p)
-  : verdict(v), param(p),
+  : verdict(v),counter(_counter), param(p),
     param_float(-1.0), param_long(-1), param_time(-1),notify_step(-1)
 {
 }
@@ -67,8 +67,7 @@ End_condition* new_end_condition(Verdict::Verdict v,const std::string& s,Conf* c
 
 End_condition_duration::End_condition_duration
 (Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,v,p) {
-    counter = DURATION;
+    End_condition(_conf,DURATION,v,p) {
     er="time limit reached";
     status=true;
     param_time = -1;
@@ -117,8 +116,7 @@ End_condition_duration::End_condition_duration
 
 
 End_condition_coverage::End_condition_coverage(Conf* _conf,Verdict::Verdict v, const std::string& p):
-  End_condition(_conf,v,p) {
-  counter = COVERAGE;
+  End_condition(_conf,COVERAGE,v,p) {
   if (param.empty()) {
     er="coverage reached";
   } else {

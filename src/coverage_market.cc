@@ -35,9 +35,8 @@ std::string Coverage_Market::stringify()
 }
 
 Coverage_Market::Coverage_Market(Log& l,const std::string& _params) :
-    Coverage(l)
+  Coverage(l),params(_params)
 {
-  params = _params;
   remove_force(params);
 }
 
