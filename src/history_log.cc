@@ -45,7 +45,7 @@ void History_log::handle_time(xmlTextReaderPtr reader) {
 }
 
 History_log::History_log(Log& l, std::string params) :
-  History(l,params), alphabet_done(false), act(NULL), tag(NULL), c(NULL), a(NULL), myes(NULL), learn(NULL), ada(NULL)
+  History(l,params), alphabet_done(false), act(NULL), tag(NULL), c(NULL), a(NULL), myes(NULL), learn(NULL),model_from_log(false), ada(NULL), alp(NULL)
 {
   std::vector<std::string> prm;
   commalist(params,prm);

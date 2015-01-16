@@ -103,8 +103,8 @@ void hook_delete(EndHook* e)
 }
 
 void stringify_hooks(std::ostringstream& t,
-		     const std::list<EndHook*> hl,
-		     const std::string name)
+		     const std::list<EndHook*>& hl,
+		     const std::string& name)
 {
   std::list<EndHook*>::const_iterator i=hl.begin();
   for(i++;i!=hl.end();i++) {

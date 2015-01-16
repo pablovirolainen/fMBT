@@ -69,8 +69,8 @@ public:
 };
 
 void stringify_hooks(std::ostringstream& t,
-		     const std::list<EndHook*> hl,
-		     const std::string name);
+		     const std::list<EndHook*>& hl,
+		     const std::string& name);
 
 
 #undef FACTORY_CREATOR_PARAMS

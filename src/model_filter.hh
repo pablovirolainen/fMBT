@@ -23,7 +23,8 @@
 
 class Model_filter : public Model {
 public:
-  Model_filter(Log&l,const std::string& param,bool _i): Model(l,param), cmp(_i)
+  Model_filter(Log&l,const std::string& param,bool _i): Model(l,param),
+							submodel(NULL),cmp(_i)
   {
     commalist(param,fa);
   }

@@ -229,12 +229,12 @@ void Heuristic_minerror::suggest_new_path()
     /* clean up bad key action candidates */
     for (std::set<std::vector<int> >::iterator cand_iter = m_key_action_candidates.begin();
          cand_iter != m_key_action_candidates.end();
-         cand_iter++)
+         ++cand_iter)
     {
         if ((*cand_iter).empty()) continue;
         for (std::map<std::vector<int>, double>::iterator subtrace_iter = m_subtrace2prob.begin();
              subtrace_iter != m_subtrace2prob.end();
-             subtrace_iter++)
+             ++subtrace_iter)
         {
             // If all key action candidates exist in the same
             // non-arming trace in the same order, remove they can't
@@ -257,7 +257,7 @@ void Heuristic_minerror::suggest_new_path()
     // DEBUG print remaining candidates
     for (std::set<std::vector<int> >::iterator cand_iter = m_key_action_candidates.begin();
          cand_iter != m_key_action_candidates.end();
-         cand_iter++)
+         ++cand_iter)
     {
         debugprint("remaining candidate: "); for (unsigned int j = 0; j < (*cand_iter).size(); j++) debugprint("%d ", (*cand_iter)[j]); debugprint("\n");
 

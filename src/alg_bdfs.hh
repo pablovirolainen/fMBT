@@ -62,8 +62,9 @@ protected:
 class AlgPathToBestCoverage: public AlgBDFS
 {
 public:
-    AlgPathToBestCoverage(Model& _model,int searchDepth = 3, Learning* learn = NULL, Function* function = NULL):
-      AlgBDFS(_model,searchDepth, learn,function) {}
+    AlgPathToBestCoverage(Model& _model,int searchDepth = 3, 
+			  Learning* learn = NULL, Function* function = NULL):
+      AlgBDFS(_model,searchDepth, learn,function),m_coverage(NULL) {}
     virtual ~AlgPathToBestCoverage() {};
 
     double search(Coverage& coverage, std::vector<std::pair<int,double> >& path);

@@ -23,21 +23,6 @@
 
 FACTORY_IMPLEMENTATION(Function)
 
-/*
-std::map<std::string, std::pair<FunctionFactory::creator,void*> >* FunctionFactory::creators = 0;
-
-FACTORY_ADD_FACTORY(Function)
-
-Function* FunctionFactory::create(
-    FACTORY_CREATE_PARAMS FACTORY_CREATE_DEFAULT_PARAMS)
-{
-  if (!creators) return NULL;
-  std::map<std::string, std::pair<creator,void*> >::iterator i = (*creators).find(name);
-  if (i!=creators->end()) return (i->second.first)(log,params,i->second.second);
-  return NULL;
-}
-*/
-
 Function* new_function(const std::string& s) {
   std::string name,option;
   param_cut(s,name,option);
@@ -67,7 +52,7 @@ Function* new_function(const std::string& s) {
 
   // Let's try a const one.
   char* endp;
-  strtod(s.c_str(),&endp);
+  (void)strtod(s.c_str(),&endp);
 
   if (*endp==0) {
     ret=FunctionFactory::create("const", name);

@@ -115,7 +115,7 @@ void *load_lib(const std::string& libname,const std::string& model_filename)
 #endif
 }
 
-int find(const std::vector<std::string> &v,const std::string s,int def)
+int find(const std::vector<std::string> &v,const std::string& s,int def)
 {
   for(unsigned i=0;i<v.size();i++) {
     if (v[i]==s) {
@@ -125,7 +125,7 @@ int find(const std::vector<std::string> &v,const std::string s,int def)
   return def;
 }
 
-int find(const std::vector<std::string*> &v,const std::string s,int def)
+int find(const std::vector<std::string*> &v,const std::string& s,int def)
 {
   for(unsigned i=0;i<v.size();i++) {
     if (*v[i]==s) {

@@ -27,7 +27,7 @@
 FACTORY_IMPLEMENTATION(Heuristic)
 
 Heuristic::Heuristic(Log& l) :
-model(NULL),learn(NULL),none(""), log(l)
+model(NULL),learn(NULL),my_coverage(NULL),none(""), log(l)
 {
   log.ref();
 }

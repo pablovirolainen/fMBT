@@ -20,6 +20,8 @@
 
 class Model_cshared: public Model {
 public:
+  // Not initialising n, because I want to have a warning from valgrind if
+  // n is used uninitialised.
   Model_cshared(Log&l,Model* m): Model(l,""),pr(NULL),child(m) {
 
   }

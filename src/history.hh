@@ -32,7 +32,7 @@ class Log;
 
 class History: public Writable {
 public:
-  History(Log& l, std::string params = "") : model_getactions(false),model_execute(false),adapter_execute(false),tag_getprops(false),tag_checktags(false),coverage_execute(true),log(l) {test_verdict="N/A";log.ref();}
+  History(Log& l, std::string params = "") :test_verdict("N/A"),model_getactions(false),model_execute(false),adapter_execute(false),tag_getprops(false),tag_checktags(false),coverage_execute(true),log(l) {log.ref();}
   virtual ~History() {log.unref();};
 
   virtual Alphabet* set_coverage(Coverage*,Alphabet* alpha,Learning* learn=NULL) =0;

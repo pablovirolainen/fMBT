@@ -23,10 +23,7 @@
 #include "conf.hh"
 
 History_remote::History_remote(Log& l, std::string params) :
-  History(l,params)
-{
-  cmd=params;
-}
+  History(l,params),c(NULL),a(NULL),cmd(params) { }
 
 Alphabet* History_remote::set_coverage(Coverage* cov,
 				       Alphabet* alpha,

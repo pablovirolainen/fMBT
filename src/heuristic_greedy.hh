@@ -32,7 +32,7 @@ class Function;
 
 class Heuristic_greedy : public Heuristic {
 public:
-  Heuristic_greedy(Log& l,const std::string& params);
+  Heuristic_greedy(Log& l,bool _adaptive,const std::string& params);
   virtual ~Heuristic_greedy();
 
   virtual bool execute(int action);
@@ -54,20 +54,14 @@ public:
 class Heuristic_lookahead: public Heuristic_greedy {
 public:
   Heuristic_lookahead(Log& l,const std::string& params):
-    Heuristic_greedy(l,params)
-  {
-    adaptive=false;
-  }
+    Heuristic_greedy(l,false,params) { }
   virtual ~Heuristic_lookahead() {}
 };
 
 class Heuristic_adaptive_lookahead: public Heuristic_greedy {
 public:
   Heuristic_adaptive_lookahead(Log& l,const std::string& params):
-    Heuristic_greedy(l,params)
-  {
-    adaptive=true;
-  }
+    Heuristic_greedy(l,true,params) { }
   virtual ~Heuristic_adaptive_lookahead() {}
   virtual void set_learn(Learning* _learn);
 };
