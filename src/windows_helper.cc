@@ -116,7 +116,6 @@ bool _iterate(std::list<std::string>::iterator &i,
 	g_io_channel_shutdown(stream,FALSE,NULL);
 	
 	if (g_str_has_prefix (line,"#!")) {
-	  gchar* interp=NULL;
 	  if (g_strrstr(line,"python")) {
 	    interp=strdup("python");
 	  }
