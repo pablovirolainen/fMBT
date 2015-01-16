@@ -53,11 +53,7 @@ Learn_time::Learn_time(Log&l,std::string s): Learning(l),learning_multiplier(NUL
     status=false;
     errormsg="Expecting 0,1 or 2 parameters. Got "+to_string((unsigned)fa.size());
   }
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> remotes/origin/factory
   if (!learning_multiplier) {
     learning_multiplier=new_function("0.5");
   }

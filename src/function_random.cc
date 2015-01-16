@@ -35,18 +35,13 @@ Function_random::Function_random(const std::string& param) {
     status=r->status;
     errormsg=r->errormsg;
   }
-<<<<<<< HEAD
   prefer=FLOAT;
-=======
-  prefer=FLOAT;  
->>>>>>> remotes/origin/factory
 }
 
 Function_random::~Function_random() {
   r->unref();
   r=NULL;
 }
-
 
 double Function_random::fval() {
   return r->drand48();
