@@ -31,6 +31,7 @@ public:
   Coverage_proxy(Log& l,Coverage* _c,const std::string& _n);
 
   virtual ~Coverage_proxy() {
+    //log.print("<Coverage push_count=\"%i\"/>",push_count);
     if (old_coverage && old_coverage!=c) 
       delete old_coverage;
     delete c;
@@ -38,6 +39,7 @@ public:
   }
 
   virtual void push() {
+    //push_count++;
     c->push();
     status=c->status;errormsg=c->errormsg;
   }
@@ -119,6 +121,7 @@ protected:
 
   Coverage* c;
   std::string name;
+  //unsigned push_count;
 };
 
 #endif

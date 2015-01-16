@@ -23,9 +23,25 @@
 
 FACTORY_IMPLEMENTATION(Function)
 
+/*
+std::map<std::string, std::pair<FunctionFactory::creator,void*> >* FunctionFactory::creators = 0;
+
+FACTORY_ADD_FACTORY(Function)
+
+Function* FunctionFactory::create(
+    FACTORY_CREATE_PARAMS FACTORY_CREATE_DEFAULT_PARAMS)
+{
+  if (!creators) return NULL;
+  std::map<std::string, std::pair<creator,void*> >::iterator i = (*creators).find(name);
+  if (i!=creators->end()) return (i->second.first)(log,params,i->second.second);
+  return NULL;
+}
+*/
+
 Function* new_function(const std::string& s) {
   std::string name,option;
   param_cut(s,name,option);
+<<<<<<< HEAD
 
   Function::PREFER p=Function::CARE;
   Function* ret;
@@ -45,7 +61,28 @@ Function* new_function(const std::string& s) {
       ret->prefer=p;
     }
   }
+=======
+>>>>>>> remotes/origin/factory
 
+  Function::PREFER p=Function::CARE;
+  Function* ret;
+
+  if (name=="INT") {
+    p=Function::INT;
+  }
+  if (name=="FLOAT") {
+    p=Function::FLOAT;
+  }
+
+  if (p==Function::CARE) {
+    ret=FunctionFactory::create(name, option);
+  } else {
+    ret=new_function(option);
+    if (ret) {
+      ret->prefer=p;
+    }
+  }
+  
   if (ret) {
     return ret;
   }

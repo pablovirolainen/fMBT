@@ -35,7 +35,11 @@ Function_random::Function_random(const std::string& param) {
     status=r->status;
     errormsg=r->errormsg;
   }
+<<<<<<< HEAD
   prefer=FLOAT;
+=======
+  prefer=FLOAT;  
+>>>>>>> remotes/origin/factory
 }
 
 Function_random::~Function_random() {

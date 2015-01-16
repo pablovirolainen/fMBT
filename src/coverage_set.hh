@@ -28,7 +28,7 @@ public:
   Coverage_set(Log&l,std::vector<std::string*>& _from,
 	       std::vector<std::string*>& _to,
 	       std::vector<std::string*>& _drop):
-    Coverage_exec_filter(l,_from,_to,_drop), allowed_set_size(0,1),max_count(1),current_count(0) {}
+    Coverage_exec_filter(l,_from,_to,_drop), allowed_set_size(0,1),max_count(1),current_count(0),total_count(0) {}
 
   virtual ~Coverage_set();
   virtual std::string stringify();
@@ -55,7 +55,6 @@ private:
   bool filter();
   bool range(int action,std::pair<int,int>& requirement);
   std::vector<Coverage*> covs;
-  unsigned len;
 
   // It's easier to use map than multiset.
   // current_set[action] is used to store the execution count.

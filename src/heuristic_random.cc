@@ -93,6 +93,10 @@ int Heuristic_random::select(int i,int* actions)
 {
   int pos=r->drand48()*i;
 
+  if (pos==i) {
+    abort();
+  }
+
   return actions[pos];
 }
 

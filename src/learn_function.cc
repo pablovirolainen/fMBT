@@ -47,10 +47,25 @@ float Learn_time_function::getE(int action) {
   return f->fval();
 }
 
+<<<<<<< HEAD
+=======
+/*
+Function* Learn_action_function::creator(std::string params,void* p) {
+  Learn_action_function* f=(Learn_action_function*)p;
+  return new ;
+}
+*/
+
+>>>>>>> remotes/origin/factory
 Learn_action_function::Learn_action_function(Log&l,std::string&s): Learn_action(l,""),index_action(0) {
   Export_int _exp("pos",&learn_as_function);
 
+  //FunctionFactory::add_factory("pos",Learn_action_function::creator,this);
   f=new_function(s);
+<<<<<<< HEAD
+=======
+  //FunctionFactory::remove_factory("pos");
+>>>>>>> remotes/origin/factory
 
   if (!f) {
     Learn_action::status=false;
@@ -86,16 +101,34 @@ void Learn_action_function::execute(int action) {
 float Learn_action_function::getF(int action) {
   index_action=action;
   return pos[action];
+<<<<<<< HEAD
+=======
+  /*
+  return f->fval();
+  */
+>>>>>>> remotes/origin/factory
 }
 
 float Learn_action_function::getC(int sug,int exe) {
   index_action=sug;
   return pos[sug];
+<<<<<<< HEAD
+=======
+  /*
+  return f->fval();
+  */
+>>>>>>> remotes/origin/factory
 }
 
 float Learn_action_function::getE(int action) {
   index_action=action;
   return pos[action];
+<<<<<<< HEAD
+=======
+  /*
+  return f->fval();
+  */
+>>>>>>> remotes/origin/factory
 }
 
 FACTORY_DEFAULT_CREATOR(Learning, Learn_time_function, "time_function")
