@@ -76,7 +76,7 @@ void Coverage_Tree::pop()
     delete_node(current_node->nodes[action]);
     current_node->nodes[action]=NULL;
     current_node->nodes.erase(action);
-    i++;
+    ++i;
   }
   push_restore.pop();
 

@@ -99,7 +99,7 @@ int main(int argc,char * const argv[])
 	i=CoverageFactory::creators->begin();
 	e=CoverageFactory::creators->end();
 
-	for(;i!=e;i++) {
+	for(;i!=e;++i) {
 	  printf("%s\n",i->first.c_str());
 	}
       }
@@ -115,7 +115,7 @@ int main(int argc,char * const argv[])
 	i=HeuristicFactory::creators->begin();
 	e=HeuristicFactory::creators->end();
 
-	for(;i!=e;i++) {
+	for(;i!=e;++i) {
 	  printf("%s\n",i->first.c_str());
 	}
       }
@@ -132,7 +132,7 @@ int main(int argc,char * const argv[])
 	i=AdapterFactory::creators->begin();
 	e=AdapterFactory::creators->end();
 
-	for(;i!=e;i++) {
+	for(;i!=e;++i) {
 	  printf("%s\n",i->first.c_str());
 	}
       }
@@ -147,7 +147,7 @@ int main(int argc,char * const argv[])
 	i=ModelFactory::creators->begin();
 	e=ModelFactory::creators->end();
 
-	for(;i!=e;i++) {
+	for(;i!=e;++i) {
 	  printf("%s\n",i->first.c_str());
 	}
       }
