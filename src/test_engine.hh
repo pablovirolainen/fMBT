@@ -53,10 +53,7 @@ protected:
   Verdict::Verdict stop_test(End_condition* ec);
   Verdict::Verdict stop_test(Verdict::Verdict v, const char* _reason);
 
-  int       max_step_count;
   int       step_count;
-  float     target_coverage;
-  int       exit_tag;
   Heuristic &heuristic;
   Adapter   &adapter;
   Log       &log;

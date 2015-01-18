@@ -54,6 +54,8 @@ void Test_engine::print_time(struct timeval& start_time,
             total_time.tv_usec);
 }
 
+// tagverify_disabled is not initialised on constructon, because we want to get
+// valgrind varning about use of uninitialised variable....
 Test_engine::Test_engine(Heuristic& h,Adapter& a,Log& l,Policy& p,std::vector<End_condition*>& ecs,std::map<int,bool>& _disabled_tags)
   : step_count(0),
     heuristic(h),
