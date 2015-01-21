@@ -1277,7 +1277,7 @@ class _Paths(object):
         else:
             path = []
             for singleDir in self.bitmapPath.split(":"):
-                if not singleDir.startswith("/"):
+                if singleDir and not singleDir.startswith("/"):
                     path.append(os.path.join(self.relativeRoot, singleDir))
                 else:
                     path.append(singleDir)
@@ -1574,7 +1574,7 @@ class GUITestInterface(object):
                   time in seconds to hold the key down.
 
           modifiers (list of strings, optional)
-                  modifier key(s) to be pressed at the same time
+                  modifier key(s) to be pressed at the same time.
         """
 
         extraParams = {}
