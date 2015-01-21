@@ -24,7 +24,8 @@ FACTORY_IMPLEMENTATION(Learning)
 #include "log.hh"
 #include "params.hh"
 
-Learning::Learning(Log& l):suggested(false), alphabet(NULL), log(l)
+Learning::Learning(Log& l):suggested(false),suggested_action(Alphabet::ERROR),
+  alphabet(NULL), log(l)
 {
   log.ref();
 }
