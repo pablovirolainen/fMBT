@@ -107,7 +107,7 @@ void stringify_hooks(std::ostringstream& t,
 		     const std::string& name)
 {
   std::list<EndHook*>::const_iterator i=hl.begin();
-  for(i++;i!=hl.end();i++) {
+  for(i++;i!=hl.end();++i) {
     std::string val=(*i)->stringify();
     if (val!="") {
       t << name << " = " << val << std::endl;

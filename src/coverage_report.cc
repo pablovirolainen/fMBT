@@ -61,7 +61,7 @@ void Coverage_report::pop() {
   std::map<std::vector<std::pair<int,std::vector<int> > >, int>::iterator e;
   i=tcount_save[push_depth].begin();
   e=tcount_save[push_depth].end();
-  for(;i!=e;i++) {
+  for(;i!=e;++i) {
     if (i->second) {
       tcount[i->first] = i->second;
     } else {

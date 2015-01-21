@@ -37,7 +37,7 @@ Coverage_notice::~Coverage_notice()
 		      std::pair<
 			std::pair<struct timeval,struct timeval>,
 			std::vector<std::pair<int,std::vector<int> > > > > >::iterator i;
-  for(i=subcovs.begin();i!=subcovs.end();i++) {
+  for(i=subcovs.begin();i!=subcovs.end();++i) {
     delete i->first.first;
     if (i->first.second != &const1) {
       delete i->first.second;
@@ -166,7 +166,7 @@ bool Coverage_notice::execute(int action)
   //for_each(subcovs.begin(),subcovs.end(),callobject);
   //for_each doesn't work for some reason and I'm too lazy to figure out why. Most likely it's my fault.
 
-  for(i1=subcovs.begin();i1!=subcovs.end();i1++) {
+  for(i1=subcovs.begin();i1!=subcovs.end();++i1) {
     ff++;
     callobject(*i1);
   }
@@ -174,7 +174,7 @@ bool Coverage_notice::execute(int action)
   // Delete handled elements...
   for(i1=subcovs.begin();i1!=subcovs.end();) {
     if (i1->first.first) {
-      i1++;
+      ++i1;
     } else {
       i1=subcovs.erase(i1);
     }
