@@ -64,11 +64,12 @@ public:
 private:
   void handle_stderr();
 
-  /*
-  FILE* d_stdin;
-  FILE* d_stdout;
-  FILE* d_stderr;
-  */
+  void send_command(const char* cmd);
+
+  void accel_push();
+  void accel_pop();
+
+  bool get_accel();
 
   GIOChannel* d_stdin;
   GIOChannel* d_stdout;

@@ -194,84 +194,104 @@ void aal_remote::adapter_exit(Verdict::Verdict verdict,
   getint(d_stdin, d_stdout,_log,0,1,this,d_stdin);
 }
 
+bool aal_remote::get_accel() {
+  std::string s="lts"+to_string(_g_simulation_depth_hint+1)+"\n";
+  if (fprintf(d_stdin,s.c_str())!=(int)s.length()) {
+    status=false;
+  }
+  g_io_channel_flush(d_stdin,NULL);
+  if (g_io_channel_flush(d_stdin,NULL)!=G_IO_STATUS_NORMAL) {
+    status=false;
+  }
+
+  int r=getint(d_stdin,d_stdout,_log,0,INT_MAX,this,d_stdin);
+  if (status && r>0) {
+    char* lts_content = new char[r+2];
+    lts_content[r]=0;
+    gsize bytes_read;
+    gsize total_read=0;
+    GIOStatus status;
+    do {
+      bytes_read=0;
+      status=g_io_channel_read_chars(d_stdout,lts_content+total_read,r-total_read,&bytes_read,NULL);
+      total_read+=bytes_read;
+    } while ((long)total_read < r && status != G_IO_STATUS_ERROR &&
+	     status != G_IO_STATUS_EOF );
+    _log.debug("Got %i bytes strlen %i",total_read,strlen(lts_content));
+    lts=new Lts(_log,std::string("remote.lts#")+lts_content);
+    delete[] lts_content;
+    if (lts && lts->status && lts->init() && lts->reset() && lts->status) {
+      accel=1;
+      return true;
+    } else {
+      if (lts) {
+	delete lts;
+	lts=NULL;
+      }
+    }
+  }
+  handle_stderr();
+  while(g_main_context_iteration(NULL,FALSE));
+  accel=-1; // do not try local lts acceleration another time
+  return false;
+}
+
 void aal_remote::push() {
   if (status) {
     if (accel>0) {
-      accel++;
-      lts->push();
+      accel_push();
       return;
     }
+
     while(g_main_context_iteration(NULL,FALSE));
     handle_stderr();
-    if (accel==0 && _g_simulation_depth_hint > 0) {
-      std::string s="lts"+to_string(_g_simulation_depth_hint+1)+"\n";
-      if (fprintf(d_stdin,s.c_str())!=(int)s.length()) {
-        status=false;
-      }
-      g_io_channel_flush(d_stdin,NULL);
-      if (g_io_channel_flush(d_stdin,NULL)!=G_IO_STATUS_NORMAL) {
-        status=false;
-      }
-      int r=getint(d_stdin,d_stdout,_log,0,INT_MAX,this,d_stdin);
-      if (status && r>0) {
-        char* lts_content = new char[r+2];
-        lts_content[r]=0;
-        gsize bytes_read;
-        gsize total_read=0;
-        GIOStatus status;
-        do {
-          bytes_read=0;
-          status=g_io_channel_read_chars(d_stdout,lts_content+total_read,r-total_read,&bytes_read,NULL);
-          total_read+=bytes_read;
-        } while ((long)total_read < r && status != G_IO_STATUS_ERROR &&
-                 status != G_IO_STATUS_EOF );
-        _log.debug("Got %i bytes strlen %i",total_read,strlen(lts_content));
-        lts=new Lts(_log,std::string("remote.lts#")+lts_content);
-        delete[] lts_content;
-        if (lts && lts->status && lts->init() && lts->reset() && lts->status) {
-          accel=1;
-          return;
-        } else {
-          if (lts) {
-            delete lts;
-            lts=NULL;
-          }
-        }
-      }
-      handle_stderr();
-      while(g_main_context_iteration(NULL,FALSE));
-      accel=-1; // do not try local lts acceleration another time
-    }
 
-    if (fprintf(d_stdin,"mu\n")!=3) {
-      status=false;
+    if (accel==0 && _g_simulation_depth_hint > 0) {
+      if (get_accel()) {
+	return;
+      }
     }
-    g_io_channel_flush(d_stdin,NULL);
-    if (g_io_channel_flush(d_stdin,NULL)!=G_IO_STATUS_NORMAL) {
-      status=false;
-    }
+    send_command("mu\n");
   }
 }
+
+void aal_remote::send_command(const char* cmd) {
+  
+  if (fprintf(d_stdin,cmd)!=3) {
+    status=false;
+  }
+
+  if (g_io_channel_flush(d_stdin,NULL)!=G_IO_STATUS_NORMAL) {
+    status=false;
+  }
+
+}
+
+
+void aal_remote::accel_push() {
+  accel++;
+  lts->push();
+}
+
+void aal_remote::accel_pop() {
+  accel--;
+  if (accel==0) {
+    delete lts;
+    lts=NULL;
+  } else {
+    lts->pop();
+  }
+}
+
 
 void aal_remote::pop() {
   if (status) {
     if (accel>0) {
-      accel--;
-      if (accel==0) {
-        delete lts;
-        lts=NULL;
-      } else {
-        lts->pop();
-      }
+      accel_pop();
     } else {
       while(g_main_context_iteration(NULL,FALSE));
       handle_stderr();
-      if (fprintf(d_stdin,"mo\n")!=3) {
-        status=false;
-      }
-      if (g_io_channel_flush(d_stdin,NULL)!=G_IO_STATUS_NORMAL) {
-        status=false;
-      }
+      send_command("mo\n");
     }
   }
 }
