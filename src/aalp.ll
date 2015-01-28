@@ -31,6 +31,7 @@ bool echo=true;
 enum {
   NONE,
   INC,
+  SH,
   DEF,
   UND,
   IF,
@@ -164,6 +165,14 @@ char* python_block(const char* input,FILE* yyout) {
 
 %%
 
+^[\ \t]*"^shell"[\ \t]+ {
+// shell
+  if (echo) {
+    state=SH;
+    BEGIN STR;
+  }
+}
+
 ^[\ \t]*"^include"[\ \t]+ {
 // include
   if (echo) {
@@ -182,7 +191,7 @@ char* python_block(const char* input,FILE* yyout) {
      s=s.substr(1);
     }
 
-    if (state!=INC && s[0]=='"') {
+    if ((state!=INC && state!=SH) && s[0]=='"') {
       std::string ss=s.substr(1);
       size_t cutpos=ss.find_first_of("\"");
       if (cutpos != ss.npos) {
@@ -191,6 +200,25 @@ char* python_block(const char* input,FILE* yyout) {
     }
 
     switch (state) {
+    case SH: {
+      if (inc_split(sinc)) {
+	char* out=NULL;
+	char* err=NULL;
+	gint status=0;
+	GError* gerr=NULL;
+	fprintf(yyout,"# 1 \"%s\"\x0A",sinc.c_str());
+
+	if (g_spawn_command_line_sync(sinc.c_str(),&out,&err,&status,&gerr)) {
+	  fprintf(yyout,"%s\n",out);
+	  fprintf(yyout,"# %i \"%s\"\x0A",lineno+1,fstack.back().c_str());
+	} else {
+	  fprintf(stderr,"Error executing command \"%s\"\n",sinc.c_str());
+	  fflush(stderr);
+	  exit(-1);
+	}
+      }
+      break;
+    }
     case INC: {
       if (inc_split(sinc)) {
 	FILE* st=include_search_open(sinc);
