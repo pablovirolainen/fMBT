@@ -439,7 +439,7 @@ def aal2lsts(aal, output_fileobj, depth=5, discard_variables=set([]),
 
         if len(path) >= depth:
             if not source_lsts_state in tags[generation_discontinued_tag]:
-                tags[generation_discontinued_tag].append(lsts_states[found_states_real[source_state]])
+                tags[generation_discontinued_tag].append(source_lsts_state)
             continue
 
         aal.push()
