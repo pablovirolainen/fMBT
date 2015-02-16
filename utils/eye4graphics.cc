@@ -570,6 +570,60 @@ int findNextIcon(BoundingBox* bbox,
     return retval;
 }
 
+int findNextHighErrorBlock(
+    BoundingBox* bbox,
+    void* image,
+    const int columns,
+    const int rows,
+    const double threshold,
+    const BoundingBox* searchArea)
+{
+    Image* haystack = static_cast<Image*>(image);
+    int hayx = haystack->columns;
+    int hayy = haystack->rows;
+    const int dataWidth = hayx / columns;
+    const int dataHeight = hayy / rows;
+    const PixelPacket* hay_pixel = getPixels(haystack, 0, 0, hayx, hayy);
+    const double max_sqerr = (QuantumRange / 2.0) * (QuantumRange / 2.0);
+    int next_left = bbox->left + dataWidth;
+    for (int y = bbox->top; y < hayy - dataHeight; y += dataHeight) {
+        for (int x = next_left; x < hayx - dataWidth; x += dataWidth) {
+            double avg_green = 0;
+            double avg_sqerr = 0;
+            int count = 0;
+            for (int yd = 0; yd < dataHeight; yd++) {
+                for (int xd = 0; xd < dataWidth; xd++) {
+                    int green = (hay_pixel + ((y + yd) * hayx) + (x + xd))->green;
+                    avg_green = (avg_green * count + green) / (count+1);
+                    count++;
+                }
+            }
+            count = 0;
+            for (int yd = 0; yd < dataHeight; yd++) {
+                double prev_sqerr = 0.0;
+                for (int xd = 0; xd < dataWidth; xd++) {
+                    int green = (hay_pixel + ((y + yd) * hayx) + (x + xd))->green;
+                    double sqerr = (avg_green - green) * (avg_green - green);
+                    avg_sqerr = ((avg_sqerr * count) + abs(prev_sqerr - sqerr)) / (count + 1);
+                    prev_sqerr = sqerr;
+                    count++;
+                }
+            }
+            if (sqrt(avg_sqerr) / sqrt(max_sqerr) > threshold) {
+                bbox->left = x;
+                bbox->top = y;
+                bbox->right = x + dataWidth;
+                bbox->bottom = y + dataHeight;
+                bbox->error = sqrt(avg_sqerr);
+                return 1;
+            }
+        }
+        next_left = 0;
+    }
+    return 0;
+}
+
+
 int imageDimensions(BoundingBox* bbox,
                     const char* imagefile)
 {
@@ -644,6 +698,7 @@ PixelPacket* getPixels(Image* image, size_t x1, size_t y1, size_t x2, size_t y2)
     DestroyExceptionInfo(exception);
     return p;
 }
+
 
 
 void closeImage(void* image)

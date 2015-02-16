@@ -1120,6 +1120,8 @@ class Device(fmbtgti.GUITestInterface):
         width, height = size
         if width == None or height == None:
             w, h = self.existingConnection().recvScreenSize()
+            if w == h == 0:
+                w, h = self.existingConnection().recvDefaultViewportSize()
         if width == None:
             width = w
         if height == None:
@@ -2135,6 +2137,18 @@ class _AndroidDeviceConnection(fmbtgti.GUITestConnection):
             raise FMBTAndroidError('cannot read screen size from dumpsys')
         return width, height
 
+    def recvDefaultViewportSize(self):
+        _, output, _ = self._runAdb(["shell", "dumpsys", "display"], 0)
+        try:
+            w, h = re.findall("mDefaultViewport=DisplayViewport\{.*deviceWidth=([0-9]*), deviceHeight=([0-9]*)\}", output)[0]
+            width = int(w)
+            height = int(h)
+        except (IndexError, ValueError), e:
+            _adapterLog('recvScreenSize: cannot read size from "%s"' %
+                        (output,))
+            raise FMBTAndroidError('cannot read screen size from dumpsys')
+        return width, height
+
     def recvCurrentDisplayOrientation(self):
         _, output, _ = self._runAdb(["shell", "dumpsys", "display"], 0)
         s = re.findall("mCurrentOrientation=([0-9])", output)
@@ -2407,12 +2421,27 @@ class _AndroidDeviceConnection(fmbtgti.GUITestConnection):
 
         Returns True on success, otherwise False.
         """
+        _screenshotTimeout = 60
         if self._screencapFormat != "png" and fmbtpng != None:
             # EXPERIMENTAL: PNG encoding moved from device to host
             remotefile = '/sdcard/fmbtandroid-s.raw'
-            self._runAdb(['shell', 'screencap %s | gzip -3 > %s' % (
-                ' '.join(self._screencapArgs), remotefile)])
-            self._runAdb(['pull', remotefile, filename + ".raw"], [0, 1])
+            cmd = ['shell', 'screencap %s | gzip -3 > %s' % (
+                ' '.join(self._screencapArgs), remotefile)]
+            status, out, err = self._runAdb(cmd, [0, 124], timeout=_screenshotTimeout)
+            if status != 0:
+                errmsg = "screenshot timeout: command='adb %s' status=%s, stdout=%s, stderr=%s" % (
+                    " ".join(cmd), status, out, err)
+            else:
+                cmd = ['pull', remotefile, filename + ".raw"]
+                status, out, err = self._runAdb(cmd, [0, 1, 124], timeout=_screenshotTimeout)
+                if status == 124:
+                    errmsg = "screenshot timeout: command='adb %s' status=%s, stdout=%s, stderr=%s" % (
+                        " ".join(cmd), status, out, err)
+                else:
+                    errmsg = "screenshot 'adb %s' failed, exit status %s" % (" ".join(cmd), status)
+            if status != 0:
+                _adapterLog(errmsg)
+                raise FMBTAndroidError(errmsg)
             data = gzip.open(filename + ".raw").read()
             os.unlink(filename + ".raw")
 
@@ -2442,12 +2471,21 @@ class _AndroidDeviceConnection(fmbtgti.GUITestConnection):
         remotefile = '/sdcard/' + os.path.basename(filename)
         remotefile = remotefile.replace(':', '_') # vfat dislikes colons
 
-        self._runAdb(['shell', 'screencap %s -p %s' % (' '.join(self._screencapArgs), remotefile)], 0)
-
-        status, out, err = self._runAdb(['pull', remotefile, filename], [0, 1])
-
+        cmd = ['shell', 'screencap %s -p %s' % (' '.join(self._screencapArgs), remotefile)]
+        status, out, err = self._runAdb(cmd, [0, 124], timeout=_screenshotTimeout)
         if status != 0:
-            raise FMBTAndroidError("Failed to fetch screenshot from the device: %s. SD card required." % ((out + err).strip(),))
+            errmsg = "screenshot timeout: command='adb %s' status=%s, stdout=%s, stderr=%s" % (
+                " ".join(cmd), status, out, err)
+        else:
+            status, out, err = self._runAdb(['pull', remotefile, filename], [0, 1, 124])
+            if status == 124:
+                errmsg = "screenshot timeout: command='adb %s' status=%s, stdout=%s, stderr=%s" % (
+                    " ".join(cmd), status, out, err)
+            else:
+                errmsg = "screenshot 'adb %s' failed, exit status: %s" % (" ".join(cmd), status)
+        if status != 0:
+            _adapterLog(errmsg)
+            raise FMBTAndroidError(errmsg)
 
         status, _, _ = self._runAdb(['shell', 'rm', remotefile], 0)
 
@@ -2473,6 +2511,7 @@ class _AndroidDeviceConnection(fmbtgti.GUITestConnection):
         os.write(fd, shellCommand + "\n")
         os.close(fd)
         self._runAdb(["push", filename, remotename], 0)
+        os.remove(filename)
         cmd = "source %s >%s.out 2>%s.err; echo $? > %s.status" % ((remotename,)*4)
         if self._shellSupportsTar:
             # do everything we can in one command to minimise adb

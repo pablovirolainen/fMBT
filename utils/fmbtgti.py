@@ -230,6 +230,13 @@ def _edgeDistanceInDirection((x, y), (width, height), direction):
     return min(distTopBottom, distLeftRight)
 
 ### Binding to eye4graphics C-library
+class _Bbox(ctypes.Structure):
+    _fields_ = [("left", ctypes.c_int32),
+                ("top", ctypes.c_int32),
+                ("right", ctypes.c_int32),
+                ("bottom", ctypes.c_int32),
+                ("error", ctypes.c_int32)]
+
 _libpath = ["", ".",
             os.path.dirname(os.path.abspath(__file__)),
             distutils.sysconfig.get_python_lib(plat_specific=1)]
@@ -239,17 +246,20 @@ if os.name == "nt":
 for _dirname in _libpath:
     try:
         eye4graphics = ctypes.CDLL(os.path.join(_dirname , "eye4graphics"+_suffix))
+        struct_bbox = _Bbox(0, 0, 0, 0, 0)
+        eye4graphics.findNextHighErrorBlock.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_double,
+            ctypes.c_void_p]
+        eye4graphics.openImage.restype = ctypes.c_void_p
+        eye4graphics.closeImage.argtypes = [ctypes.c_void_p]
         break
     except: pass
 else:
     raise ImportError("%s cannot load eye4graphics%s" % (__file__, _suffix))
-
-class _Bbox(ctypes.Structure):
-    _fields_ = [("left", ctypes.c_int32),
-                ("top", ctypes.c_int32),
-                ("right", ctypes.c_int32),
-                ("bottom", ctypes.c_int32),
-                ("error", ctypes.c_int32)]
 
 def _e4gOpenImage(filename):
     image = eye4graphics.openImage(filename)
@@ -2626,6 +2636,15 @@ class Screenshot(object):
             if id(self._oirEngine) == id(self._ocrEngine):
                 self._ocrEngineNotified = True
 
+    def dumpHcr(self, filename, **hcrArgs):
+        """
+        Visualize high contrast regions, write image to given file.
+        Experimental.
+        """
+        items = self.findItemsByHcr(**hcrArgs)
+        eyenfinger.drawBboxes(self.filename(), filename,
+                             [i.bbox() for i in items])
+
     def dumpOcr(self, **kwargs):
         """
         Return what OCR engine recognizes on this screenshot.
@@ -2679,6 +2698,31 @@ class Screenshot(object):
         else:
             raise RuntimeError('Trying to use OCR on "%s" without OCR engine.' % (self.filename(),))
 
+    def findItemsByHcr(self, xRes=24, yRes=24, threshold=0.1):
+        """
+        Return "high contrast regions" in the screenshot.
+
+        Experimental. See if it finds regions that could be
+        interacted with.
+        """
+        ppFilename = "%s-hcrpp.png" % (self.filename(),)
+        _convert(self.filename(),
+                 ["-colorspace", "gray", "-depth", "3"],
+                 ppFilename)
+        bbox = _Bbox(0, 0, 0, 0, 0)
+        foundItems = []
+        try:
+            image = _e4gOpenImage(ppFilename)
+            while True:
+                if eye4graphics.findNextHighErrorBlock(ctypes.byref(bbox), image, xRes, yRes, threshold, 0) == 0:
+                    break
+                foundItems.append(GUIItem(
+                    "%sx%s/%s" % (bbox.left/xRes, bbox.top/yRes, bbox.error),
+                    (bbox.left, bbox.top, bbox.right, bbox.bottom),
+                    self.filename()))
+        finally:
+            eye4graphics.closeImage(image)
+        return foundItems
     def save(self, fileOrDirName):
         shutil.copy(self._filename, fileOrDirName)
 
