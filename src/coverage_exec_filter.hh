@@ -76,6 +76,15 @@ public:
 
   virtual void set_model(Model* _model);
 
+  virtual void alphabet_update(Alphabet* alpha) {
+    std::vector<std::string>& sp(model->getSPNames());
+    std::vector<std::string>& n(model->getActionNames());
+
+    mhandler(sp,n,from,start_action,start_tag);
+    mhandler(sp,n,to,end_action,end_tag);
+    mhandler(sp,n,drop,rollback_action,rollback_tag);
+  }
+
 protected:
   static void ds(std::string* s);
   bool prop_set(std::vector<int> p,int npro,int* props);

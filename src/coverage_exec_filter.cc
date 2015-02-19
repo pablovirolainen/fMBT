@@ -67,12 +67,7 @@ void Coverage_exec_filter::set_model(Model* _model)
 {
   Coverage::set_model(_model);
 
-  std::vector<std::string>& sp(model->getSPNames());
-  std::vector<std::string>& n(model->getActionNames());
-
-  mhandler(sp,n,from,start_action,start_tag);
-  mhandler(sp,n,to,end_action,end_tag);
-  mhandler(sp,n,drop,rollback_action,rollback_tag);
+  alphabet_update(NULL);
 
   // Let's handle initial tags
   execute(0);
