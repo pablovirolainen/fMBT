@@ -1485,10 +1485,7 @@ public:
 	  }
 	}
       }
-
-
     }
-
 
     virtual void reset() {
       unit_tagdual::reset();
@@ -1580,7 +1577,6 @@ public:
       return new unit_tagor(*this);
     }
   };
-
 
   class unit_mult: public unit {
   public:

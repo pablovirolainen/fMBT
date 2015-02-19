@@ -216,7 +216,6 @@ Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const char m,const std::s
     op='|';
   }
 
-  //std::set<Coverage_Market::unit_tag*> uset;
   std::vector<std::pair<Coverage_Market::unit_tag*, bool> > uset;
 
   for(unsigned i=0;i<tags.size();i++) {
@@ -234,15 +233,6 @@ Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const char m,const std::s
   }
 
   return u;
-
-  /*
-  for(unsigned i=1;i<tags.size();i++) {
-    Coverage_Market::unit_tag* u2=new Coverage_Market::unit_tagleaf(tags[i]);
-    u=new Coverage_Market::unit_tagelist(op,u,u2);
-  }
-
-  return u;
-  */
 }
 
 Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const std::string &tag,char op) {
