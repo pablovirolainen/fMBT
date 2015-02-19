@@ -297,9 +297,8 @@ Coverage_Market::unit* Coverage_Market::req_rx_action(const char m,const std::st
     regexpmatch(action, model->getActionNames(), actions  , false,1,1);
 
     if (actions.empty()) {
-      errormsg = "No actions matching \"" + action + "\"";
-      status = false;
-      return NULL;
+      std::string msg("No actions matching \"" + action + "\"");
+      warnings.push_back(msg);
     }
     if (prev_tag||next_tag) {
       if (!prev_tag) {
@@ -316,36 +315,32 @@ Coverage_Market::unit* Coverage_Market::req_rx_action(const char m,const std::st
       prev_tag->set_left(true);
     }
 
-    if (actions.size()==1) {
-      u=new Coverage_Market::unit_leaf(actions[0]);
-   } else {
-	for(unsigned int i=0; i < actions.size(); i++) {
-	  if (!u) {
-	    switch (m) {
-	    case 'r': // Random
-	      u=new Coverage_Market::unit_manyleafrandom();	      
-	      break;
-	    case 'e': // Exists
-	      u=new Coverage_Market::unit_manyleafor();
-	      break;
-	    case 'a': // All
-	      u=new Coverage_Market::unit_manyleafand();
-	      break;
-	    default:
-	      abort();
-	    }
-	  }
-	  ((unit_manyleaf*)u)->my_action.push_back(actions[i]);
-	  ((unit_manyleaf*)u)->value    .push_back(0);
-	  u->value.second++;
-	}
+    /* Because of alphabet update, we can't use unit_leaf in the case, 
+       regexp matches to only one action.
+    */
+    switch (m) {
+    case 'r': // Random
+      u=new Coverage_Market::unit_manyleafrandom(action);
+      break;
+    case 'e': // Exists
+      u=new Coverage_Market::unit_manyleafor(action);
+      break;
+    case 'a': // All
+      u=new Coverage_Market::unit_manyleafand(action);
+      break;
+    default:
+      abort();
     }
+    
+    model->add_alphabet_update(((unit_manyleaf*)u));
+    u->alphabet_update(model);
   } else {
     int an = model->action_number(action.c_str());
     if (an<=0) {
-      errormsg="No such action \"" + action + "\"";
-      status=false;
-      u = new Coverage_Market::unit_leaf(0);
+      std::string msg("No such action \"" + action + "\"");
+      warnings.push_back(msg);
+      u = new Coverage_Market::unit_leaf(0,0);
+      model->add_alphabet_update(u);
     } else {
       u = new Coverage_Market::unit_leaf(an);
     }
@@ -500,6 +495,17 @@ Coverage_Market::unit_many::unit_many(const unit_many &obj):
     if (u)
       u=u->clone();
     units.push_back(u);
+  }
+}
+
+void Coverage_Market::unit_manyleaf::alphabet_update(Alphabet* alphabet) {
+  std::vector<int> act;
+  regexpmatch(action, alphabet->getActionNames(),act,false,1,actions);
+  actions=alphabet->getActionNames().size();// I wonder if this should be +1 ?
+  for(unsigned i=0;i<act.size();i++) {
+    my_action.push_back(act[i]);
+    value    .push_back(0);
+    Coverage_Market::unit::value.second++;
   }
 }
 

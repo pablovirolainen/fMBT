@@ -62,6 +62,11 @@ public:
   virtual int check_tags(std::vector<int>& tag,std::vector<int>& t);
   virtual int observe(std::vector<int> &action,bool block=false);
 private:
+  void read_alphabet_update();
+  
+  int alphabet_getint(GIOChannel* out,GIOChannel* in,Log& log,
+		      Writable* w=NULL,GIOChannel* magic=NULL);
+
   void handle_stderr();
 
   void send_command(const char* cmd);

@@ -52,6 +52,7 @@ public:
 
   virtual bool set_instance(int instance);
 
+  virtual void alphabet_update(Alphabet*);
 protected:
   void precalc();
   bool filter(int depth,int action);

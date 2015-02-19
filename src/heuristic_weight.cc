@@ -239,12 +239,12 @@ int Heuristic_weight::getIAction()
   return actions[pos];
 }
 
-void Heuristic_weight::set_model(Model* _model)
+void Heuristic_weight::alphabet_update(Alphabet*)
 {
-  Heuristic::set_model(_model);
-
   char* s=readfile(prm.c_str());
   if (s) {
+    weights.clear();
+    weight_ids.clear();
     Heuristic_weight* h=Hw;
     Hw=this;
     D_Parser *p = new_D_Parser(&parser_tables_weight, 512);
@@ -262,6 +262,12 @@ void Heuristic_weight::set_model(Model* _model)
     status=false;
     errormsg="Can't read inputfile \"" + prm + "\"";
   }
+}
+
+void Heuristic_weight::set_model(Model* _model)
+{
+  Heuristic::set_model(_model);
+  alphabet_update(model);
 }
 
 void Heuristic_weight::set_coverage(Coverage* c)

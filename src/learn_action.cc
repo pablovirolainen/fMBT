@@ -60,6 +60,11 @@ bool Learn_action::add_action(std::string&s) {
   return true;
 }
 
+void Learn_action::alphabet_update(Alphabet*) {
+  
+}
+
+
 void Learn_action::setAlphabet(Alphabet* a) {
   Learning::setAlphabet(a);
 

@@ -45,7 +45,7 @@
    reason for failure.
 */
 
-class Adapter: public Writable {
+class Adapter: public Writable, public Alphabet_update {
 public:
   static struct timeval current_time;
   static int sleeptime;

@@ -20,8 +20,35 @@
 #define __alphabet_hh__
 
 #include <string>
+#include <list>
+#include <vector>
 
-class Alphabet {
+class Alphabet;
+
+class Alphabet_update {
+public:
+  virtual void alphabet_update(Alphabet*) {
+  }
+};
+
+class Alphabet_updater {
+public:
+  // Register callback
+  virtual void add_alphabet_update(Alphabet_update* u) {
+    alphabet_update_callbacks.push_back(u);
+  }
+
+  // Unregister callback
+  virtual void remove_alphabet_update(Alphabet_update* u) {
+    alphabet_update_callbacks.remove(u);
+  }
+
+  virtual void update(Alphabet* alpha=NULL);
+protected:
+  std::list<Alphabet_update*> alphabet_update_callbacks;
+};
+
+class Alphabet:public Alphabet_updater {
 public:
 enum values {
   OUTPUT_ONLY =-1,
@@ -29,7 +56,8 @@ enum values {
   SILENCE = -3,
   TIMEOUT = -4,
   ERROR   = -5,
-  ALPHABET_MIN = ERROR
+  UPDATE  = -6,
+  ALPHABET_MIN = UPDATE
 };
 
   virtual ~Alphabet() {}
@@ -41,7 +69,12 @@ enum values {
 
   //! Returns the name of the given action
   virtual std::string& getActionName(int action)     = 0;
-  
+
+  virtual int action_number(const std::string& s);
+
+protected:
+  std::vector<std::string> prop_names; /* proposition names.. */
+  std::vector<std::string> action_names; /* action names.. */
 };
 
 #endif

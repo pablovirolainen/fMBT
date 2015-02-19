@@ -24,7 +24,7 @@
 #include "helper.hh"
 #include "function.hh"
 
-class Learn_action: public Learning {
+class Learn_action: public Learning,public Alphabet_update {
 public:
   Learn_action(Log&l,std::string s);
   bool add_action(std::string& param);
@@ -34,6 +34,7 @@ public:
   virtual void execute(int action);
   virtual float getF(int action);
   virtual float getC(int sug,int exe);
+  virtual void alphabet_update(Alphabet*);
 protected:
   std::string constructor_param;
   struct as {

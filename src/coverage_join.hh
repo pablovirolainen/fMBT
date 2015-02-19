@@ -79,6 +79,8 @@ public:
     return 0;
   }
   void handle_sub(const std::string& sub);
+
+  virtual void alphabet_update(Alphabet*);
 protected:
   Alphabet_impl* alpha;
   Model_yes* submodel;

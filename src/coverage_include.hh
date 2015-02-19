@@ -74,6 +74,8 @@ public:
     return true;
   }
 
+  virtual void alphabet_update(Alphabet*);
+
   virtual float getCoverage() {
     if (child) {
       return child->getCoverage();

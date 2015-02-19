@@ -111,7 +111,6 @@ void Coverage_Tree::precalc()
       }
     }
 
-    node_count=1;
     max_count=0;
     long ccount=1;
     for(int i=0;i<max_depth;i++) {
@@ -123,8 +122,7 @@ void Coverage_Tree::precalc()
 
 int Coverage_Tree::actions_at_depth(int depth) {
   if (!have_filter) {
-    static int retval=model->getActionNames().size()-1;
-    return retval;
+    return model->getActionNames().size()-1;
   }
   return act_depth[depth];
 }
@@ -140,7 +138,9 @@ inline bool Coverage_Tree::filter(int depth,int action)
 void Coverage_Tree::set_model(Model* _model)
 {
   Coverage::set_model(_model);
+  node_count=1;
   precalc();
+  model->add_alphabet_update(this);
 }
 
 void Coverage_Tree::history(int action,std::vector<int>& props,
@@ -261,6 +261,12 @@ void Coverage_Tree::set_max_depth(std::string&s)
   }
   precalc();
   log.debug("%s(%s) -> %i\n",__PRETTY_FUNCTION__,s.c_str(),max_depth);
+}
+
+void Coverage_Tree::alphabet_update(Alphabet*) {
+  act_depth.clear();
+  mask.clear();
+  precalc();
 }
 
 FACTORY_DEFAULT_CREATOR(Coverage, Coverage_Tree, "perm")

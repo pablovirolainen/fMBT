@@ -24,13 +24,14 @@
 
 #include "factory.hh"
 #include "writable.hh"
+#include "alphabet.hh"
 
 class Coverage;
 class Model;
 class Log;
 class Learning;
 
-class Heuristic: public Writable {
+class Heuristic: public Writable, public Alphabet_update {
 public:
   Heuristic(Log& l);
   virtual ~Heuristic();

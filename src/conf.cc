@@ -302,6 +302,9 @@ void Conf::load(std::string& name,std::string& content)
   if (!adapter->status)
     RETURN_ERROR_VOID(adapter->lineno,"Adapter error: " + adapter->stringify());
 
+  // We need to be able to tell adapter about alphabet update
+  model->add_alphabet_update(adapter);
+
   log.pop();
 }
 

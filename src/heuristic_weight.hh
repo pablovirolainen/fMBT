@@ -46,6 +46,7 @@ public:
 	   int w,int o);
 
   virtual void set_learn(Learning* _learn);
+  virtual void alphabet_update(Alphabet*);
 protected:
   Random* r;
   bool use_learn;

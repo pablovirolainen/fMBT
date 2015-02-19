@@ -32,7 +32,7 @@ Heuristic_coverage_random::Heuristic_coverage_random(Log& l,const std::string& p
   Heuristic(l),h(NULL),sub_coverage(NULL),var(0.1),r(NULL)
 {
   std::vector<std::string> subs;
-  commalist(params,subs);  
+  commalist(params,subs);
   // varianse, random, sub
   if (subs.size()>3) {
     status=false;
@@ -51,7 +51,6 @@ Heuristic_coverage_random::Heuristic_coverage_random(Log& l,const std::string& p
     l.push("Heuristic=coverage_random");
     l.print("<random init=\"%s\"/>\n",r->stringify().c_str());
     l.pop();
-
   }
 
   if (subs.size()>1) {
@@ -70,8 +69,7 @@ Heuristic_coverage_random::Heuristic_coverage_random(Log& l,const std::string& p
       delete f;
     }
   }
-  
-  
+
   if (!r) {
     r=Random::default_random();
     // default random
@@ -94,7 +92,6 @@ Heuristic_coverage_random::Heuristic_coverage_random(Log& l,const std::string& p
     errormsg=h->errormsg;
     status=false;
   }
-
 }
 
 Heuristic_coverage_random::~Heuristic_coverage_random()
@@ -130,9 +127,9 @@ int Heuristic_coverage_random::getIAction()
 void Heuristic_coverage_random::set_model(Model* _model)
 {
   Heuristic::set_model(_model);
-  if (sub_coverage) 
+  if (sub_coverage)
     sub_coverage->set_model(model);
-  if (h) 
+  if (h)
     h->set_model(model);
 }
 

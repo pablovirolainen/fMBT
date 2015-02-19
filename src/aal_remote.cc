@@ -138,6 +138,51 @@ void aal_remote::handle_stderr() {
   free(read_buf);
 }
 
+// TODO: Filter out duplicate alphabets?
+void aal_remote::read_alphabet_update() {
+  char* read_buf=NULL;
+  size_t read_buf_pos=0;
+  ssize_t red=bgetline(&read_buf,&read_buf_pos,d_stdout,_log,d_stdin);
+
+  _log.debug("Waiting for action names");
+  while (red>1) {
+    _log.debug("aname %i (%s)",red,read_buf);
+    action_names.push_back(read_buf);
+    red=bgetline(&read_buf,&read_buf_pos,d_stdout,_log,d_stdin);
+  }
+
+  _log.debug("Waiting for tags");
+  red=bgetline(&read_buf,&read_buf_pos,d_stdout,_log,d_stdin);
+
+  while (red>1) {
+    _log.debug("tname %i (%s)",red,read_buf);
+    tag_names.push_back(read_buf);
+    red=bgetline(&read_buf,&read_buf_pos,d_stdout,_log,d_stdin);
+  }
+
+}
+
+int aal_remote::alphabet_getint(GIOChannel* out,GIOChannel* in,Log& log,
+				Writable* w,
+				GIOChannel* magic) {
+
+  int r=getint(out,in,log,Alphabet::ALPHABET_MIN,
+	       action_names.size(),w,magic);
+  /*
+  if (r==Alphabet::UPDATE) {
+    read_alphabet_update();
+  }
+  */
+  while (r==Alphabet::UPDATE) {
+    read_alphabet_update();
+    update();
+    r=getint(out,in,log,Alphabet::ALPHABET_MIN,action_names.size(),w,magic);
+  }
+
+  return r;
+}
+
+
 int aal_remote::adapter_execute(int action,const char* params) {
   while(g_main_context_iteration(NULL,FALSE));
 
@@ -151,8 +196,7 @@ int aal_remote::adapter_execute(int action,const char* params) {
     fprintf(d_stdin, "ap%s\n",params);
 
   fprintf(d_stdin, "a%i\n", action);
-  int r= getint(d_stdin,d_stdout,_log,Alphabet::ALPHABET_MIN,
-                action_names.size(),this,d_stdin);
+  int r= alphabet_getint(d_stdin,d_stdout,_log,this,d_stdin);
   _log.debug("adapter_execute exit");
   return r;
 }
@@ -170,8 +214,7 @@ int aal_remote::model_execute(int action) {
   handle_stderr();
 
   fprintf(d_stdin, "m%i\n", action);
-  return getint(d_stdin,d_stdout,_log,Alphabet::ALPHABET_MIN,
-                action_names.size(),this,d_stdin);
+  return alphabet_getint(d_stdin,d_stdout,_log,this,d_stdin);
 }
 
 void aal_remote::adapter_exit(Verdict::Verdict verdict,
@@ -335,7 +378,7 @@ int aal_remote::getActions(int** act) {
 
   fprintf(d_stdin, "ma\n");
   if ((rv = getact(act,actions,d_stdin,d_stdout,_log,
-                   1,action_names.size(),this,d_stdin)) >= 0) {
+		   1,action_names.size(),this,d_stdin)) >= 0) {
     return rv;
   }
   status = false;

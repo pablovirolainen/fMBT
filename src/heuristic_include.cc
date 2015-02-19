@@ -50,6 +50,11 @@ Heuristic_include_base::Heuristic_include_base(Log& l,const std::string& params,
   }
 }
 
+void Heuristic_include_base::alphabet_update(Alphabet*) {
+  mf.init();
+  mf.update();
+}
+
 void Heuristic_include_base::set_coverage(Coverage* c)
 {
   Heuristic::set_coverage(c);

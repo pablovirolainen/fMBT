@@ -51,6 +51,8 @@ public:
     return Heuristic::execute(action);
   }
 
+  virtual void alphabet_update(Alphabet*);
+
 private:
   bool exclude;
   Heuristic* child;

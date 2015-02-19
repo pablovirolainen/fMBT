@@ -28,7 +28,7 @@
 #include "log.hh"
 #include "aal.hh"
 
-class Mwrapper: public Model {
+class Mwrapper: public Model, public Alphabet_update {
 public:
   Mwrapper(Log&l,const std::string& params, aal* _model);
   virtual ~Mwrapper();
@@ -44,7 +44,10 @@ public:
 
   virtual std::string stringify();
 
+  virtual void alphabet_update(Alphabet*);
+
 protected:
+  void handle_alphabet_update();
   aal* model;
 };
 

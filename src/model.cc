@@ -84,16 +84,6 @@ void Model::precalc_input_output()
   }
 }
 
-int Model::action_number(const std::string& s)
-{
-  for(size_t i=0;i<action_names.size();i++) {
-    if (action_names[i]==s) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 Model* Model::up()
 {
   return parent;

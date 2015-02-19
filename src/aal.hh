@@ -40,7 +40,9 @@ class aal;
 
 #include "writable.hh"
 #include "verdict.hh" 
-class aal: public Writable {
+#include "alphabet.hh"
+
+class aal: public Writable, public Alphabet_update, public Alphabet_updater {
 public:
   aal(Log&l, std::string& _params): refcount(0),_log(l), params(_params) {_log.ref();};
   virtual ~aal() {_log.unref();};
@@ -105,6 +107,8 @@ public:
   int output(const std::string&);
 
   static std::map<std::string,aal*>* storage;
+
+  Alphabet_update* alphabet_update_forward;
 
 protected:
   int refcount;

@@ -119,4 +119,9 @@ void Coverage_Join::set_model(Model* _model)
 
 }
 
+void Coverage_Join::alphabet_update(Alphabet*) {
+  //TODO
+  //submodel->precalc_input_output();
+}
+
 FACTORY_DEFAULT_CREATOR(Coverage, Coverage_Join, "join")

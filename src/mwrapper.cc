@@ -20,6 +20,15 @@
 #include "mwrapper.hh"
 #include <cstring>
 
+# define UPDATE_ALPHABET_RETRY(expression)                                    \
+  (__extension__                                                              \
+   ({ int __result = (expression);                                            \
+      while (__result == UPDATE) {                                            \
+        handle_alphabet_update();                                             \
+	__result = (expression);					      \
+      }                                                                       \
+      __result; }))
+
 Mwrapper::~Mwrapper()
 {
   if (model) {
@@ -38,18 +47,44 @@ Mwrapper::Mwrapper(Log&l,const std::string& params, aal* _model):
     prop_names=model->getSPNames();
     status = model->status;
     precalc_input_output();
+    model->add_alphabet_update(this);
   } else {
     status=false;
   }
+}
+
+void Mwrapper::alphabet_update(Alphabet*) {
+  handle_alphabet_update();
+  update(this);
 }
 
 int Mwrapper::getActions(int** actions) {
   if (!status) {
     return 0;
   }
-  int ret=model->getActions(actions);
+  int ret=UPDATE_ALPHABET_RETRY(model->getActions(actions));
   status = model->status;
   return ret;
+}
+
+#include <algorithm>
+
+void Mwrapper::handle_alphabet_update() {
+  std::vector<std::string>& updated_action_names=model->getActionNames();
+  std::vector<std::string>& updated_prop_names=model->getSPNames();
+
+  if (updated_action_names.size()>action_names.size()) 
+    action_names.insert(action_names.end(),
+			updated_action_names.begin()+action_names.size(),
+			updated_action_names.end());
+
+  if (updated_prop_names.size()>prop_names.size()) 
+    prop_names.insert(prop_names.end(),
+		      updated_prop_names.begin()+prop_names.size(),
+		      updated_prop_names.end());
+
+  precalc_input_output();
+  update(this);
 }
 
 int Mwrapper::getIActions(int** actions) {
@@ -57,7 +92,7 @@ int Mwrapper::getIActions(int** actions) {
     return 0;
   }
 
-  int a=model->getActions(actions);
+  int a=UPDATE_ALPHABET_RETRY(model->getActions(actions));
   int ret=a;
   for(int i=0;i<a;i++) {
     if (is_output((*actions)[i])) {
@@ -81,7 +116,7 @@ bool Mwrapper::reset() {
 /* No props */
 int Mwrapper::getprops(int** props)
 {
-  int ret= model->getprops(props);
+  int ret= UPDATE_ALPHABET_RETRY(model->getprops(props));
   status = model->status;
   return ret;
 }
@@ -89,7 +124,7 @@ int Mwrapper::getprops(int** props)
 int Mwrapper::execute(int action)
 {
   int rv = 0;
-  if (-42 != (rv = model->model_execute(action))) {
+  if (-42 != (rv = UPDATE_ALPHABET_RETRY(model->model_execute(action)))) {
     status = model->status;
     return rv;
   }

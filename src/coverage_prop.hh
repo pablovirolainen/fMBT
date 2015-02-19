@@ -58,6 +58,7 @@ public:
   int props_total;
   int props_seen;
   std::vector<bool> data;
+  virtual void alphabet_update(Alphabet*);
 protected:
   void regexp_try(std::string&,std::vector<std::string>&);
 

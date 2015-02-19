@@ -56,8 +56,10 @@ void Coverage_Include_base::set_mode_helper(std::vector<std::string>& n,
     }
   }
 
+  Names.clear();
   Names.push_back(""); // TAU
 
+  map.clear();
   map.resize(n.size()+1); // TAU
 
   for(unsigned i=1;i<n.size();i++) {
@@ -76,13 +78,20 @@ void Coverage_Include_base::set_model(Model* _model)
 
   set_mode_helper(model->getActionNames(),filteractions,ActionNames,amap);
   set_mode_helper(model->getSPNames(),filtertags,SPNames,smap);
-
   alpha=new Alphabet_impl(ActionNames,SPNames);
   submodel=new Model_yes(log,"");
   submodel->set_model(alpha);
   child->set_model(submodel);
   status=child->status;
   errormsg=child->errormsg;
+  model->add_alphabet_update(this);
+}
+
+void Coverage_Include_base::alphabet_update(Alphabet*) {
+  // We need to update submodel alphabet and start submodel alphabet update
+  set_mode_helper(model->getActionNames(),filteractions,ActionNames,amap);
+  set_mode_helper(model->getSPNames(),filtertags,SPNames,smap);
+  submodel->update();
 }
 
 class Coverage_Include: public Coverage_Include_base {

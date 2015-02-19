@@ -135,7 +135,7 @@ public:
 
   typedef std::pair<int, int> val;
 
-  class unit {
+  class unit: public Alphabet_update{
   public:
     unit() {value.first=0;value.second=0;}
     val& get_value() {
@@ -554,8 +554,10 @@ public:
 
   class unit_manyleaf: public unit {
   public:
-    unit_manyleaf() {}
+    unit_manyleaf(std::string _action):actions(1),action(_action) {}
     virtual ~unit_manyleaf() {}
+
+    virtual void alphabet_update(Alphabet*);
 
     virtual void set_instance(int instance,int current_instance,
 			      bool forced=false) {
@@ -600,14 +602,17 @@ public:
     }
     */
 
+    int actions;
+    std::string action;
     std::vector<int> my_action;
     std::vector<int> value;
     std::stack<std::vector<int> > st;
     std::stack<val> st2;
     std::map<int,std::vector<int> > manyleaf_instance_map;
   protected:
-    unit_manyleaf(const unit_manyleaf &obj): unit(obj),my_action(obj.my_action),
-					     value(obj.value) {}
+    unit_manyleaf(const unit_manyleaf &obj):
+      unit(obj),actions(obj.actions),action(obj.action),my_action(obj.my_action),
+      value(obj.value) {}
   };
 
   class unit_manyleafand: public unit_manyleaf {
@@ -621,7 +626,7 @@ public:
       return ret;
 
     }
-    unit_manyleafand() {}
+    unit_manyleafand(std::string _action):unit_manyleaf(_action) {}
     virtual ~unit_manyleafand() {}
 
     virtual void execute(const std::vector<int>& prev,int action,const std::vector<int>& next) {
@@ -663,7 +668,7 @@ public:
       return ret;
 
     }
-    unit_manyleafor() {}
+    unit_manyleafor(std::string _action):unit_manyleaf(_action) {}
     virtual ~unit_manyleafor() {}
 
     virtual void execute(const std::vector<int>& prev,int action,const std::vector<int>& next) {
@@ -706,10 +711,9 @@ public:
 	ret+=" or \"" + a.getActionName(my_action[i])+"\"";
       }
       return ret;
-
     }
 
-    unit_manyleafrandom() {
+    unit_manyleafrandom(std::string _action):unit_manyleaf(_action) {
       r = Random::default_random();
       random_pos=-1;
     }
@@ -1267,6 +1271,15 @@ public:
       return a.getActionName(my_action);
     }
 
+    virtual void alphabet_update(Alphabet* alpha)
+    {
+      my_action = alpha->action_number(action.c_str());
+      if (my_action) {
+	value.second=1;
+	alpha->remove_alphabet_update(this);
+      }
+    }
+
     unit_leaf(int action, int count=1) : my_action(action)
     {
       value.second=count;
@@ -1302,6 +1315,7 @@ public:
     virtual unit* clone() {
       return new unit_leaf(*this);
     }
+    std::string action;
   protected:
     int my_action;
     std::stack<val> st;

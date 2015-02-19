@@ -123,11 +123,7 @@ void Coverage_Prop::regexp_try(std::string& s,std::vector<std::string>& sp) {
   }
 }
 
-void Coverage_Prop::set_model(Model* _model) {
-  Coverage::set_model(_model);
-  /*
-  props_total=model->getSPNames().size()-1; // let's ignore 0
-  */
+void Coverage_Prop::alphabet_update(Alphabet*) {
   if (params=="") {
     props_total=model->getSPNames().size()-1; // let's ignore 0
     if (props_total<0) {
@@ -153,8 +149,13 @@ void Coverage_Prop::set_model(Model* _model) {
     props_total=prop_included.size();
   }
   data.resize(props_total+1);
-
+  // Update seen tags
   execute(0);
+}
+
+void Coverage_Prop::set_model(Model* _model) {
+  Coverage::set_model(_model);
+  alphabet_update(NULL);
 }
 
 FACTORY_DEFAULT_CREATOR(Coverage, Coverage_Prop, "tag")

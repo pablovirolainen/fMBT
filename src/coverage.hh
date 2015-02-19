@@ -23,10 +23,11 @@
 #include "writable.hh"
 #include "log.hh"
 #include "verdict.hh"
+#include "alphabet.hh"
 
 class Model;
 
-class Coverage: public Writable {
+class Coverage: public Writable,public Alphabet_update {
 
 public:
   Coverage(Log& l);

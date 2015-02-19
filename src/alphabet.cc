@@ -1,6 +1,6 @@
 /*
  * fMBT, free Model Based Testing tool
- * Copyright (c) 2011, Intel Corporation.
+ * Copyright (c) 2015, Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU Lesser General Public License,
@@ -16,21 +16,23 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifndef __writable_hh__
-#define __writable_hh__
 
-#include <string>
-#include <vector>
+#include "alphabet.hh"
 
-class Writable {
-public:
-  Writable(): status(true), errormsg(""),lineno(-1) {}
-  virtual ~Writable() {}
-  virtual std::string stringify() { if (!status) return errormsg; else return ""; }
-  bool status;
-  std::string errormsg;
-  std::vector<std::string> warnings;
-  int lineno;
-};
+void Alphabet_updater::update(Alphabet* alpha) {
+  Alphabet* a=alpha?alpha:dynamic_cast<Alphabet*>((Alphabet*)(this));
+  for (std::list<Alphabet_update*>::iterator it=alphabet_update_callbacks.begin();
+       it != alphabet_update_callbacks.end(); ++it) {
+    (*it)->alphabet_update(a);
+  }
+}
 
-#endif
+int Alphabet::action_number(const std::string& s)
+{
+  for(size_t i=0;i<action_names.size();i++) {
+    if (action_names[i]==s) {
+      return i;
+    }
+  }
+  return -1;
+}
