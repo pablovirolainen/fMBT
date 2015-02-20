@@ -139,11 +139,18 @@ public:
 
   class unit: public Alphabet_update{
   public:
-    unit() {value.first=0;value.second=0;}
+    unit():alphabet(NULL) {value.first=0;value.second=0;}
     val& get_value() {
       return value;
     }
-    virtual ~unit() {value.first=0;value.second=0;}
+    virtual ~unit() {
+      value.first=0;
+      value.second=0;
+    }
+
+    virtual void alphabet_update(Alphabet* a) {
+      alphabet=a;
+    }
 
     // No need to define copy-constructor. Default is just fine
 
@@ -157,7 +164,7 @@ public:
     virtual void reset() {}
     virtual void set_instance(int instance,int current_instance, bool force=false) =0;
     val value;
-
+    Alphabet* alphabet;
     virtual std::string stringify(Alphabet& a)=0;
 
     class eunit {
@@ -179,9 +186,12 @@ public:
       execute(un.prev,un.action,un.next);
     }
   protected:
-    unit(const unit &obj):value(obj.value) {}
-
+    unit(const unit &obj):value(obj.value),alphabet(obj.alphabet) {
+      if (alphabet)
+	alphabet->add_alphabet_update(this);
+    }
   };
+
   class unit_coverage_tag: public unit {
   public:
     unit_coverage_tag(std::string* s,Coverage_Market* _m):p(*s),m(_m) {
@@ -564,11 +574,12 @@ public:
     virtual void set_instance(int instance,int current_instance,
 			      bool forced=false) {
       if (forced) {
+	unsigned vecsize=value.size();
 	manyleaf_instance_map[current_instance]=value;
 	value=manyleaf_instance_map[instance];
+	value.resize(vecsize);
       }
     }
-
 
     virtual void reset() {
       unit::value.first=0;
@@ -592,22 +603,11 @@ public:
     virtual void update() {
     }
 
-    /*
-    virtual void execute(const std::vector<int>& prev,int action,const std::vector<int>& next) {
-      for(unsigned i=0;i<my_action.size();i++) {
-	if (action==my_action[i]) {
-	  if (value[i]<unit::value.second) {
-	    value[i]++;
-	  }
-	}
-      }
-    }
-    */
-
     int actions;
     std::string action;
     std::vector<int> my_action;
     std::vector<int> value;
+
     std::stack<std::vector<int> > st;
     std::stack<val> st2;
     std::map<int,std::vector<int> > manyleaf_instance_map;
@@ -645,15 +645,7 @@ public:
 	}
       }
     }
-    /*
-    virtual void update(){
-      unit::value.first=0;
 
-      for(size_t i=0;i<value.size();i++) {
-	unit::value.first += value[i];
-      }
-    }
-    */
     virtual unit* clone() {
       return new unit_manyleafand(*this);
     }
@@ -668,8 +660,8 @@ public:
 	ret+=" or \"" + a.getActionName(my_action[i])+"\"";
       }
       return ret;
-
     }
+
     unit_manyleafor(std::string _action):unit_manyleaf(_action) {}
     virtual ~unit_manyleafor() {}
 
@@ -1207,6 +1199,158 @@ public:
     unit_tagnot(const unit_tagnot &obj);
   };
 
+  class unit_manytag: public unit_tag {
+  public:
+    // No stringify. See unit_tagmanyand and unit_tagmanyor
+
+    unit_manytag(std::string _tag_expr):unit_tag(),tags(0),tag_expr(_tag_expr) { }
+
+    virtual void alphabet_update(Alphabet* alphabet);
+
+    virtual void set_instance(int instance,int current_instance,
+			      bool forced=false) {
+      if (forced) {
+	unsigned vecsize=value.size();
+	manytag_instance_map[current_instance]=value;
+	value=manytag_instance_map[instance];
+	// Handles alphabet upates when using different instance
+	value.resize(vecsize);
+      }
+    }
+
+    virtual void reset() {
+      unit::value.first=0;
+      for(unsigned i=0;i<value.size();i++) {
+	value[i]=0;
+      }
+    }
+
+    virtual void push() {
+      st.push(value);
+      st2.push(unit::value);
+    }
+
+    virtual void pop() {
+      value=st.top();
+      st.pop();
+      unit::value=st2.top();
+      st2.pop();
+    }
+
+    virtual void update() { }
+
+    virtual ~unit_manytag() { }
+
+    virtual unit* clone() {
+      return new unit_manytag(*this);
+    }
+  protected:
+    int tags;
+    std::string tag_expr;
+    std::vector<int> my_tag;
+    std::vector<int> value;
+
+    std::stack<std::vector<int> > st;
+    std::stack<val> st2;
+    std::map<int,std::vector<int> > manytag_instance_map;
+    unit_manytag(const unit_manytag &obj):
+      unit_tag(obj),tags(obj.tags),tag_expr(obj.tag_expr),my_tag(obj.my_tag),
+      value(obj.value),manytag_instance_map(obj.manytag_instance_map) {}
+
+  };
+
+  class unit_manytagor: public unit_manytag {
+  public:
+    unit_manytagor(std::string _tag_expr):unit_manytag(_tag_expr) { }
+    virtual ~unit_manytagor() {}
+
+    virtual std::string stringify(Alphabet&a) {
+      //TODO
+      /*
+      std::string ret="\""+a.getSPName(my_tag[0])+"\"";
+      for(size_t i=1;i<my_tags.size();i++) {
+	ret+=" or \"" + a.getSPName(my_tag[i])+"\"";
+      }
+      return ret;
+      */
+      return "";
+    }
+
+    virtual void execute(const std::vector<int>& prev,int action,const std::vector<int>& next) {
+      if (unit::value.first==unit::value.second) {
+	return;
+      }
+      for(unsigned i=0;i<my_tag.size();i++) {
+	if (left_side) {
+	  if (std::find(prev.begin(), prev.end(), my_tag[i])!=prev.end()) {
+	    unit::value.first=unit::value.second;
+	    return;
+	  }
+	} else {
+	  if (std::find(next.begin(), next.end(), my_tag[i])!=next.end()) {
+	    unit::value.first=unit::value.second;
+	    return;
+	  }
+	}
+      }
+    }
+
+    virtual unit* clone() {
+      return new unit_manytagor(*this);
+    }
+  protected:
+    //unit_manytagor(const unit_manytagor &obj);
+  };
+
+  class unit_manytagand: public unit_manytag {
+  public:
+    unit_manytagand(std::string _tag_expr):unit_manytag(_tag_expr) { }
+    virtual ~unit_manytagand() {}
+
+    virtual std::string stringify(Alphabet&a) {
+      //TODO
+      /*
+      std::string ret="\""+a.getSPName(my_tag[0])+"\"";
+      for(size_t i=1;i<my_tags.size();i++) {
+	ret+=" or \"" + a.getSPName(my_tag[i])+"\"";
+      }
+      return ret;
+      */
+      return "";
+    }
+
+    virtual void execute(const std::vector<int>& prev,int action,const std::vector<int>& next) {
+      if (unit::value.first==unit::value.second) {
+	return;
+      }
+      for(unsigned i=0;i<my_tag.size();i++) {
+	if (value[i]<1) {
+	  if (left_side) {
+	    // Should be use binary_search?
+	    // At least my_tag is sorted...
+	    if (std::find(prev.begin(), prev.end(), my_tag[i])!=prev.end()) {
+	      value[i]++;
+	      unit::value.first++;
+	    }
+	  } else {
+	    if (std::find(next.begin(), next.end(), my_tag[i])!=next.end()) {
+	      value[i]++;
+	      unit::value.first++;
+	    }
+	  }
+	  if (unit::value.first==unit::value.second) {
+	    return;
+	  }
+	}
+      }
+    }
+    virtual unit* clone() {
+      return new unit_manytagand(*this);
+    }
+  protected:
+    //unit_manytagand(const unit_manytagand &obj);
+  };
+
   class unit_tagleaf: public unit_tag {
   public:
     virtual std::string stringify(Alphabet&a) {
@@ -1279,6 +1423,7 @@ public:
       if (my_action) {
 	value.second=1;
 	alpha->remove_alphabet_update(this);
+	alphabet=NULL;
       }
     }
 

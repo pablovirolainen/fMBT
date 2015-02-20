@@ -244,26 +244,25 @@ Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const std::string &tag,ch
   regexpmatch(tag, model->getSPNames(),tags  , false,1,1);
 
   if (tags.empty()) {
-    errormsg = "No tags matching \"" + tag + "\"";
-    status = false;
-    return NULL;
+    std::string msg("No tags matching \"" + tag + "\"");
+    warnings.push_back(msg);
   }
 
-  Coverage_Market::unit_tag* u=new Coverage_Market::unit_tagleaf(tags[0]);
+  Coverage_Market::unit_tag* u=NULL;
 
-  for(unsigned i=1;i<tags.size();i++) {
-      Coverage_Market::unit_tag* u2=new Coverage_Market::unit_tagleaf(tags[i]);
-    switch(op) {
-    case 'e':
-      u=new Coverage_Market::unit_tagor(u,u2);
-      break;
-    case 'a':
-      u=new Coverage_Market::unit_tagand(u,u2);
-      break;
-    default:
-      abort();
-    }
+  switch(op) {
+  case 'e':
+    u=new Coverage_Market::unit_manytagor(tag);
+    break;
+  case 'a':
+    u=new Coverage_Market::unit_manytagand(tag);
+    break;
+  default:
+    abort();
   }
+
+  model->add_alphabet_update(u);
+  u->alphabet_update(model);
 
   return u;
 }
@@ -290,6 +289,7 @@ Coverage_Market::unit* Coverage_Market::req_rx_action(const char m,const std::st
       std::string msg("No actions matching \"" + action + "\"");
       warnings.push_back(msg);
     }
+
     if (prev_tag||next_tag) {
       if (!prev_tag) {
 	prev_tag=new unit_tag();
@@ -322,7 +322,7 @@ Coverage_Market::unit* Coverage_Market::req_rx_action(const char m,const std::st
       abort();
     }
     
-    model->add_alphabet_update(((unit_manyleaf*)u));
+    model->add_alphabet_update(u);
     u->alphabet_update(model);
   } else {
     int an = model->action_number(action.c_str());
@@ -331,6 +331,7 @@ Coverage_Market::unit* Coverage_Market::req_rx_action(const char m,const std::st
       warnings.push_back(msg);
       u = new Coverage_Market::unit_leaf(0,0);
       model->add_alphabet_update(u);
+      u->alphabet=model;
     } else {
       u = new Coverage_Market::unit_leaf(an);
     }
@@ -489,12 +490,25 @@ Coverage_Market::unit_many::unit_many(const unit_many &obj):
 }
 
 void Coverage_Market::unit_manyleaf::alphabet_update(Alphabet* alphabet) {
+  unit::alphabet_update(alphabet);
   std::vector<int> act;
   regexpmatch(action, alphabet->getActionNames(),act,false,1,actions);
   actions=alphabet->getActionNames().size();// I wonder if this should be +1 ?
   for(unsigned i=0;i<act.size();i++) {
     my_action.push_back(act[i]);
     value    .push_back(0);
+    Coverage_Market::unit::value.second++;
+  }
+}
+
+void Coverage_Market::unit_manytag::alphabet_update(Alphabet* alphabet) {
+  unit::alphabet_update(alphabet);
+  std::vector<int> tag;
+  regexpmatch(tag_expr, alphabet->getSPNames(),my_tag,false,1,tags);
+  tags=alphabet->getSPNames().size();// I wonder if this should be +1 ?
+  for(unsigned i=0;i<tag.size();i++) {
+    my_tag.push_back(tag[i]);
+    value .push_back(0);
     Coverage_Market::unit::value.second++;
   }
 }

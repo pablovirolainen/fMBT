@@ -27,6 +27,18 @@ void Alphabet_updater::update(Alphabet* alpha) {
   }
 }
 
+Alphabet_updater::Alphabet_updater() {
+  all_alphabet_updaters.push_back(this);
+}
+
+Alphabet_update::~Alphabet_update() {
+  Alphabet_updater::global_remove_alphabet_update(this);
+}
+
+Alphabet_updater::~Alphabet_updater() {
+  all_alphabet_updaters.remove(this);
+}
+
 int Alphabet::action_number(const std::string& s)
 {
   for(size_t i=0;i<action_names.size();i++) {
@@ -35,4 +47,13 @@ int Alphabet::action_number(const std::string& s)
     }
   }
   return -1;
+}
+
+std::list<Alphabet_updater*> Alphabet_updater::all_alphabet_updaters;
+
+void Alphabet_updater::global_remove_alphabet_update(Alphabet_update* u) {
+  for(std::list<Alphabet_updater*>::iterator i=all_alphabet_updaters.begin();
+      i!=all_alphabet_updaters.end();++i) {
+    (*i)->remove_alphabet_update(u);
+  }
 }

@@ -24,15 +24,19 @@
 #include <vector>
 
 class Alphabet;
+class Alphabet_updater;
 
 class Alphabet_update {
 public:
+  virtual ~Alphabet_update();
   virtual void alphabet_update(Alphabet*) {
   }
 };
 
 class Alphabet_updater {
 public:
+  Alphabet_updater();
+  virtual ~Alphabet_updater();
   // Register callback
   virtual void add_alphabet_update(Alphabet_update* u) {
     alphabet_update_callbacks.push_back(u);
@@ -44,8 +48,11 @@ public:
   }
 
   virtual void update(Alphabet* alpha=NULL);
+  static void global_remove_alphabet_update(Alphabet_update* u);
 protected:
   std::list<Alphabet_update*> alphabet_update_callbacks;
+private:
+  static std::list<Alphabet_updater*> all_alphabet_updaters;
 };
 
 class Alphabet:public Alphabet_updater {
