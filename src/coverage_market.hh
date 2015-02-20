@@ -237,6 +237,10 @@ public:
     {
       value.first=child->props_seen;
       value.second=child->props_total;
+      if (value.second==0) {
+	value.first=1;
+	value.second=1;
+      }
     }
 
     virtual void pop()
@@ -251,11 +255,20 @@ public:
 
     virtual void reset()
     {
-      child->set_model(m->get_model());
+      if (!child->status) {
+	m->status=child->status;
+	m->errormsg=child->errormsg;
+	return;
+      }
       for(unsigned i=0;i<child->data.size();i++) {
 	child->data[i]=false;
       }
-      child->props_seen=0;
+      child->set_model(m->get_model());
+      if (!child->status) {
+	m->status=child->status;
+	m->errormsg=child->errormsg;
+	return;
+      }
       value.first=child->props_seen;
       value.second=child->props_total;
     }
