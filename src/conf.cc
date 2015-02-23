@@ -530,14 +530,14 @@ Conf::~Conf() {
   if (heuristic)
     delete heuristic;
 
+  if (coverage)
+    delete coverage;
+
   if (adapter)
     delete adapter;
 
   if (model)
     delete model;
-
-  if (coverage)
-    delete coverage;
 
   adapter=NULL;
   heuristic=NULL;

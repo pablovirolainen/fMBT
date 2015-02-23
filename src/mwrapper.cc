@@ -31,6 +31,10 @@
 
 Mwrapper::~Mwrapper()
 {
+  // If not explisitely called, this pointer can be left hanging into 
+  // model->alpabet_update_callbacs, because model is deleted before 
+  // this...
+  global_remove_alphabet_update(this);
   if (model) {
     model->unref();
   }
