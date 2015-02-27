@@ -272,6 +272,21 @@ class RemoteAALBridge:
                             error(str(e))
                 put_list(failing_tags)
             elif cmd[0] == "m":
+                if not fmbt.simulated():
+                    acts = self._aal.new_actions()
+                    tags = []
+                    if acts or tags:
+                        self._aal.new_actions_clear()
+                        # send new actions to test generator
+                        put(str(aalmodel.ALPHABET_UPDATE))
+                        if acts:
+                            for name in acts:
+                                put(name)
+                        put("")
+                        if tags:
+                            for name in tags:
+                                put(name)
+                        put("")
                 if opt_verbose_fmbt_log and not fmbt.simulated():
                     # write variable values to fmbt log
                     state_str = self._aal.state()

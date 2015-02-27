@@ -5,6 +5,7 @@ import traceback
 import fmbt
 
 SILENCE = -3
+ALPHABET_UPDATE = -6
 
 def setCodeFileLine(c, filename, lineno, funcname=None):
     if funcname == None:
@@ -16,14 +17,9 @@ def setCodeFileLine(c, filename, lineno, funcname=None):
 
 class AALModel:
     def __init__(self, model_globals):
-        self._all_guards = self._get_all("guard", "action")
-        self._all_bodies = self._get_all("body", "action")
-        self._all_adapters = self._get_all("adapter", "action")
-        self._all_names = self._get_all("name", "action")
-        self._all_types = self._get_all("type", "action")
-        self._all_tagnames = self._get_all("name", "tag")
-        self._all_tagguards = self._get_all("guard", "tag")
-        self._all_tagadapters = self._get_all("adapter", "tag")
+        self._read_actions()
+        self._read_tags()
+        self._new_actions = []
         if len(self._get_all("guard_next_block", "serial")) > 0:
             self._has_serial = True
         else:
@@ -36,11 +32,24 @@ class AALModel:
         self._variables['variable'] = lambda varname: self._variables[varname]
         self._variables['assign'] = lambda varname, v: self._variables.__setitem__(varname, v)
         self._variables['guard_list'] = []
+        self._variables['add_input'] = self.add_input
         self._stack = []
         self._stack_executed_actions = []
         self._adapter_exit_executed = False
         self._enabled_actions_stack = [set()]
         fmbt._g_testStep = 0
+
+    def _read_actions(self):
+        self._all_guards = self._get_all("guard", "action")
+        self._all_bodies = self._get_all("body", "action")
+        self._all_adapters = self._get_all("adapter", "action")
+        self._all_names = self._get_all("name", "action")
+        self._all_types = self._get_all("type", "action")
+
+    def _read_tags(self):
+        self._all_tagnames = self._get_all("name", "tag")
+        self._all_tagguards = self._get_all("guard", "tag")
+        self._all_tagadapters = self._get_all("adapter", "tag")
 
     def _get_all(self, property_name, itemtype):
         plist = []
@@ -60,6 +69,39 @@ class AALModel:
             else:
                 return
             i += 1
+
+    def add_input(self, name=None,
+                  adapter=lambda: True,
+                  guard=lambda: True,
+                  body=lambda: True):
+        if name == None:
+            name = adapter.func_code.co_name
+        if not name.startswith("i:"):
+            name = "i:" + name
+        if name in self._all_names:
+            raise ValueError('input "%s" already exists' % (name,))
+        # find a free action slot
+        i = 1
+        while getattr(self.__class__, "action%sname" % (i,), None) != None:
+            i += 1
+        # add input to this AALModel class
+        setattr(self, "action%sname" % (i,), name)
+        setattr(self, "action%stype" % (i,), "input")
+        guard.func_name = "action%sguard" % (i,)
+        guard.requires = []
+        setattr(self, guard.func_name, guard)
+        body.func_name = "action%sbody" % (i,)
+        setattr(self, body.func_name, body)
+        adapter.func_name = "action%sadapter" % (i,)
+        setattr(self, adapter.func_name, adapter)
+        self._read_actions()
+        self._new_actions.append(name)
+
+    def new_actions(self):
+        return self._new_actions
+
+    def new_actions_clear(self):
+        self._new_actions = []
 
     def call(self, func, call_arguments = ()):
         guard_list = None

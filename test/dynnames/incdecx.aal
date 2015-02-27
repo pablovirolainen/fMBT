@@ -1,0 +1,22 @@
+language "python" {}
+
+variables {
+    x
+}
+initial_state {
+    x = 1
+}
+adapter_init {
+    def decx_body():
+        global x
+        x -= 1
+    def test_decx():
+        print "hello from decx"
+    add_input("decx",
+        adapter = test_decx,
+        guard = lambda: x > 1,
+        body = decx_body)
+}
+input "incx" {
+    body  { x += 1 }
+}
