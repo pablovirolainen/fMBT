@@ -243,13 +243,29 @@ Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const std::string &tag,ch
   std::vector<int> tags;
   regexpmatch(tag, model->getSPNames(),tags  , false,1,1);
 
+  Coverage_Market::unit_tag* u=NULL;
+
   if (tags.empty()) {
     std::string msg("No tags matching \"" + tag + "\"");
     warnings.push_back(msg);
+  } else {
+    u=new Coverage_Market::unit_tagleaf(tags[0]);
+    
+     for(unsigned i=1;i<tags.size();i++) {
+       Coverage_Market::unit_tag* u2=new Coverage_Market::unit_tagleaf(tags[i]);
+       switch(op) {
+       case 'e':
+	 u=new Coverage_Market::unit_tagor(u,u2);
+	 break;
+       case 'a':
+	 u=new Coverage_Market::unit_tagand(u,u2);
+	 break;
+       default:
+	 abort();
+       }
+     }
   }
-
-  Coverage_Market::unit_tag* u=NULL;
-
+  /*
   switch(op) {
   case 'e':
     u=new Coverage_Market::unit_manytagor(tag);
@@ -263,6 +279,7 @@ Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const std::string &tag,ch
 
   model->add_alphabet_update(u);
   u->alphabet_update(model);
+  */
 
   return u;
 }
