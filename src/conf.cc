@@ -524,9 +524,25 @@ void Conf::set_model(Coverage* _c)
 void hook_delete(EndHook* e);
 
 Conf::~Conf() {
+
+  if (model && adapter)
+    model->remove_alphabet_update(adapter);
+
   for (unsigned int i = 0; i < end_conditions.size(); i++)
     delete end_conditions[i];
   log.pop();
+
+  for(unsigned i=0;i<history.size();i++) {
+    if (history[i].first) {
+      delete history[i].first;
+    }
+  }
+
+  for_each(pass_hooks.begin(),pass_hooks.end(),hook_delete);
+  for_each(fail_hooks.begin(),fail_hooks.end(),hook_delete);
+  for_each(inc_hooks.begin(),inc_hooks.end(),hook_delete);
+  for_each(error_hooks.begin(),error_hooks.end(),hook_delete);
+
   if (heuristic)
     delete heuristic;
 
@@ -544,15 +560,5 @@ Conf::~Conf() {
   model=NULL;
   coverage=NULL;
 
-  for(unsigned i=0;i<history.size();i++) {
-    if (history[i].first) {
-      delete history[i].first;
-    }
-  }
-
-  for_each(pass_hooks.begin(),pass_hooks.end(),hook_delete);
-  for_each(fail_hooks.begin(),fail_hooks.end(),hook_delete);
-  for_each(inc_hooks.begin(),inc_hooks.end(),hook_delete);
-  for_each(error_hooks.begin(),error_hooks.end(),hook_delete);
   log.unref();
 }
