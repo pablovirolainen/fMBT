@@ -117,11 +117,11 @@ public:
 
   virtual void set_model(Model* _model);
 
-  virtual bool set_instance(int instance) {
+  virtual bool set_instance(int instance,bool restart=false) {
     for(unsigned i=0;i<coverages.size();i++) {
-      if (!coverages[i]->set_instance(instance)) {
+      if (!coverages[i]->set_instance(instance,restart)) {
 	for(unsigned j=0;j<i;j++) {
-	  coverages[i]->set_instance(0);
+	  coverages[i]->set_instance(0,restart);
 	  return false;
 	}
       }

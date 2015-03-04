@@ -42,7 +42,7 @@ public:
   void foo();
 
   std::string cc1,cc2;
-  
+
   std::list<std::pair<std::pair<Coverage*,Coverage*>,
 		      std::pair<
 			std::pair<struct timeval,struct timeval>,

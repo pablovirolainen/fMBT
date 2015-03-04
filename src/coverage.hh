@@ -35,7 +35,7 @@ public:
   virtual void push()=0;
   virtual void pop()=0;
 
-  virtual bool set_instance(int instance) {
+  virtual bool set_instance(int instance,bool restart=false) {
     return false;
   }
 

@@ -59,7 +59,6 @@ Mwrapper::Mwrapper(Log&l,const std::string& params, aal* _model):
 
 void Mwrapper::alphabet_update(Alphabet*) {
   handle_alphabet_update();
-  update(this);
 }
 
 int Mwrapper::getActions(int** actions) {

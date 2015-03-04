@@ -28,12 +28,14 @@
 #include <list>
 #include <vector>
 
-class Test_engine {
+class Test_engine:public Alphabet_update {
 public:
   Test_engine(Heuristic& h,Adapter& a,Log& l,Policy& p, std::vector<End_condition*>& ecs,std::map<int,bool>& _disable_tags);
   virtual ~Test_engine();
   Verdict::Verdict run(time_t _end_time=-1,bool disable_tagverify=false);
   void interactive();
+
+  virtual void alphabet_update(Alphabet*);
 
   /*
     matching_end_condition returns the index of the first end
@@ -71,6 +73,10 @@ protected:
   std::vector<int> mismatch_tags;
   bool        tagverify_disabled;
   std::map<int,bool>& disabled_tags;
+  std::list<ssize_t*> update_ints;
+  std::list<std::vector<std::string>*> update_tags;
+  int tags_size;
+  int actions_size;
 };
 
 #endif

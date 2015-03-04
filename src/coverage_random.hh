@@ -78,6 +78,9 @@ public:
     return ret;
   }
 
+  virtual bool set_instance(int instance,bool restart=false) {
+    return parent->set_instance(instance,restart);
+  }
 
 protected:
   Coverage* parent;

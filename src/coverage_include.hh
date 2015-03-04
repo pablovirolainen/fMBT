@@ -53,8 +53,8 @@ public:
     }
   }
 
-  virtual bool set_instance(int instance) {
-    return child->set_instance(instance);
+  virtual bool set_instance(int instance,bool restart=false) {
+    return child->set_instance(instance,restart);
   }
 
   virtual bool execute(int action) {

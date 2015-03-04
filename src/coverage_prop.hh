@@ -55,6 +55,10 @@ public:
 
   virtual void set_model(Model* _model);
 
+  virtual bool set_instance(int instance,bool restart=false) {
+    return true;
+  }
+
   int props_total;
   int props_seen;
   std::vector<bool> data;

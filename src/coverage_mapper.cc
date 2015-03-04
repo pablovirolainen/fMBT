@@ -43,6 +43,25 @@ Coverage_Mapper::Coverage_Mapper(Log& l,const std::string& params) :
   load(params);
 }
 
+bool Coverage_Mapper::set_instance(int instance,bool restart) {
+  bool ret=true;
+  for(unsigned i=0;i<coverages.size()&&ret;i++) {
+    if (coverages[i]) {    
+      ret=coverages[i]->set_instance(instance,restart);
+    }
+  }
+
+  if (!ret) {
+    for(unsigned i=0;i<coverages.size()&&ret;i++) {
+      if (coverages[i]) {    
+	coverages[i]->set_instance(0,restart);
+      }
+    }
+  }
+
+  return ret;
+}
+
 std::string Coverage_Mapper::stringify()
 {
   std::ostringstream t(std::ios::out | std::ios::binary);

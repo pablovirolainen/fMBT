@@ -78,6 +78,11 @@ void Awrapper::set_tags(std::vector<std::string>* _tags)
   }
 }
 
+void Awrapper::alphabet_update(Alphabet* a) {
+  set_actions(&a->getActionNames());
+  set_tags(&a->getSPNames());
+}
+
 void Awrapper::set_actions(std::vector<std::string>* _actions)
 {
   Adapter::set_actions(_actions);

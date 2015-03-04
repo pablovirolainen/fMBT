@@ -69,12 +69,12 @@ float Coverage_avoid::getCoverage() {
   return h[0].second->getCoverage();
 }
 
-bool Coverage_avoid::set_instance(int instance)
+bool Coverage_avoid::set_instance(int instance,bool restart)
 {
   for(unsigned i=0;i<h.size();i++) {
-    if (!h[i].second->set_instance(instance)) {
+    if (!h[i].second->set_instance(instance,restart)) {
       for(unsigned j=0;j<i;j++) {
-	h[i].second->set_instance(0);
+	h[i].second->set_instance(0,restart);
 	return false;
       }
     }

@@ -61,9 +61,12 @@ public:
 
   virtual std::string stringify();
 
-  virtual bool set_instance(int instance) {
+  virtual bool set_instance(int instance,bool restart=false) {
     for (unsigned int i = 0; i < Units.size(); i++) {
       Units[i]->set_instance(instance,current_instance);
+      if (restart) {
+	Units[i]->reset();
+      }
       // Is this actually needed?
       Units[i]->update();
     }

@@ -37,17 +37,18 @@ public:
 
   }
 
-  virtual bool set_instance(int instance) {
-     Coverage_exec_filter::set_instance(instance);
-     instance_map_report[current_instance]=was_online;
-     if (instance_map_report.find(instance)==
-	 instance_map_report.end()) {
-       was_online=false;
-     } else {
-       was_online=instance_map_report[current_instance];
-     }
+  // restart broken!
+  virtual bool set_instance(int instance,bool restart=false) {
+    Coverage_exec_filter::set_instance(instance,restart);
+    instance_map_report[current_instance]=was_online;
 
-     return true;
+    if (instance_map_report.find(instance)==
+	instance_map_report.end()) {
+      was_online=false;
+    } else {
+      was_online=instance_map_report[current_instance];
+    }
+    return true;
   }
 
   virtual std::string stringify();

@@ -43,12 +43,25 @@ Coverage_Tree::Coverage_Tree(Log& l,const std::string& _params) :
   }
 }
 
-bool Coverage_Tree::set_instance(int instance)
+bool Coverage_Tree::set_instance(int instance,bool restart)
 {
-  if (instance_map.find(instance)==instance_map.end()) {
-    instance_map[instance] = new std::vector<std::pair<struct node*,bool> >(max_depth+1);
+  std::map<int,std::vector<std::pair<struct node*,bool> >*>::iterator i=
+    instance_map.find(instance);
+
+  if (restart) {
+    if (i!=instance_map.end()) {
+      delete i->second;
+    }
+    i->second = new std::vector<std::pair<struct node*,bool> >(max_depth+1);
+  } else {
+    if (i==instance_map.end()) {
+      i=instance_map.insert(std::pair<int,
+			    std::vector<std::pair<struct node*,bool> >*>
+			    (instance,new std::vector<std::pair<struct node*,bool> >
+			     (max_depth+1))).first;
+    }
   }
-  exec=instance_map[instance];
+  exec=i->second;//instance_map[instance];
   return true;
 }
 

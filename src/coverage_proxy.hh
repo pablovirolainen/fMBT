@@ -48,8 +48,8 @@ public:
     status=c->status;errormsg=c->errormsg;
   }
 
-  virtual bool set_instance(int instance) {
-    bool ret=c->set_instance(instance);
+  virtual bool set_instance(int instance,bool restart=false) {
+    bool ret=c->set_instance(instance,restart);
     status=c->status;errormsg=c->errormsg;
     return ret;
   }

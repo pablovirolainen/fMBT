@@ -287,6 +287,7 @@ class RemoteAALBridge:
                             for name in tags:
                                 put(name)
                         put("")
+                        action_names = self._aal.getActionNames()
                 if opt_verbose_fmbt_log and not fmbt.simulated():
                     # write variable values to fmbt log
                     state_str = self._aal.state()
@@ -314,6 +315,7 @@ class RemoteAALBridge:
                 try:
                     rv = self._aal.adapter_execute(action_number,
                                                    adapter_call_arguments)
+                    if opt_debug: _log("adapter_execure returned: '%s'" % (rv,))
                     if rv == None or rv is True:
                         rv = action_number
                     if (type(rv) == int and (rv == 0 or rv > len(action_names))) or (type(rv) != int):
@@ -326,6 +328,7 @@ class RemoteAALBridge:
                     if isinstance(e, AssertionError):
                         rv = 0
                     else:
+                        if opt_debug: _log("ERROR!")
                         error(str(e))
                 put(rv)
                 adapter_call_arguments = []

@@ -50,7 +50,7 @@ public:
 
   virtual void set_model(Model* _model);
 
-  virtual bool set_instance(int instance);
+  virtual bool set_instance(int instance,bool restart=false);
 
   virtual void alphabet_update(Alphabet*);
 protected:

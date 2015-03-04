@@ -29,7 +29,7 @@ public:
 
   virtual ~Coverage_avoid();
 
-  virtual bool set_instance(int instance);
+  virtual bool set_instance(int instance,bool restart=false);
 
   virtual void push();
   virtual void pop();

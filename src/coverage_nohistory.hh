@@ -66,6 +66,10 @@ public:
     
   }
 
+  virtual bool set_instance(int instance,bool restart=false) {
+    return child->set_instance(instance,restart);
+  }
+
   virtual void set_model(Model* _model) {
     child->set_model(_model);
     status=child->status;

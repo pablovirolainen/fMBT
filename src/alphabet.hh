@@ -20,7 +20,7 @@
 #define __alphabet_hh__
 
 #include <string>
-#include <list>
+#include <set>
 #include <vector>
 
 class Alphabet;
@@ -39,20 +39,21 @@ public:
   virtual ~Alphabet_updater();
   // Register callback
   virtual void add_alphabet_update(Alphabet_update* u) {
-    alphabet_update_callbacks.push_back(u);
+    alphabet_update_callbacks.insert(u);
   }
 
   // Unregister callback
   virtual void remove_alphabet_update(Alphabet_update* u) {
-    alphabet_update_callbacks.remove(u);
+    alphabet_update_callbacks.erase(u);
   }
 
   virtual void update(Alphabet* alpha=NULL);
   static void global_remove_alphabet_update(Alphabet_update* u);
 protected:
-  std::list<Alphabet_update*> alphabet_update_callbacks;
+  std::set<Alphabet_update*> alphabet_update_callbacks;
+  unsigned callbacks();
 private:
-  static std::list<Alphabet_updater*> all_alphabet_updaters;
+  static std::set<Alphabet_updater*> all_alphabet_updaters;
 };
 
 class Alphabet:public Alphabet_updater {

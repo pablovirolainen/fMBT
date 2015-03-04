@@ -18,25 +18,33 @@
  */
 
 #include "alphabet.hh"
+#include "stdlib.h"
 
 void Alphabet_updater::update(Alphabet* alpha) {
   Alphabet* a=alpha?alpha:dynamic_cast<Alphabet*>((Alphabet*)(this));
-  for (std::list<Alphabet_update*>::iterator it=alphabet_update_callbacks.begin();
+  for (std::set<Alphabet_update*>::iterator it=alphabet_update_callbacks.begin();
        it != alphabet_update_callbacks.end(); ++it) {
     (*it)->alphabet_update(a);
   }
 }
 
 Alphabet_updater::Alphabet_updater() {
-  all_alphabet_updaters.push_back(this);
+  all_alphabet_updaters.insert(this);
 }
 
 Alphabet_update::~Alphabet_update() {
   Alphabet_updater::global_remove_alphabet_update(this);
 }
 
+unsigned Alphabet_updater::callbacks() {
+  return alphabet_update_callbacks.size();
+}
+
 Alphabet_updater::~Alphabet_updater() {
-  all_alphabet_updaters.remove(this);
+  all_alphabet_updaters.erase(this);
+  if (! alphabet_update_callbacks.empty()) {
+    abort();
+  }
 }
 
 int Alphabet::action_number(const std::string& s)
@@ -49,10 +57,10 @@ int Alphabet::action_number(const std::string& s)
   return -1;
 }
 
-std::list<Alphabet_updater*> Alphabet_updater::all_alphabet_updaters;
+std::set<Alphabet_updater*> Alphabet_updater::all_alphabet_updaters;
 
 void Alphabet_updater::global_remove_alphabet_update(Alphabet_update* u) {
-  for(std::list<Alphabet_updater*>::iterator i=all_alphabet_updaters.begin();
+  for(std::set<Alphabet_updater*>::iterator i=all_alphabet_updaters.begin();
       i!=all_alphabet_updaters.end();++i) {
     (*i)->remove_alphabet_update(u);
   }

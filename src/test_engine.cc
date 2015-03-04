@@ -42,7 +42,6 @@ size_t strnlen(const char *s, size_t maxlen)
 }
 #endif
 
-
 void Test_engine::print_time(struct timeval& start_time,
                              struct timeval& total_time)
 {
@@ -220,12 +219,27 @@ void log_strarray(Log&l,
   }
 }
 
+class _update_registerer {
+public:
+  _update_registerer(Alphabet_updater* _updater,Alphabet_update* _update):
+    updater(_updater),update(_update) {
+    updater->add_alphabet_update(update);
+  }
+
+  ~_update_registerer() {
+    updater->remove_alphabet_update(update);    
+  }
+
+  Alphabet_updater* updater;
+  Alphabet_update* update;
+};
 
 Verdict::Verdict Test_engine::run(time_t _end_time,bool disable_tagverify)
 {
   float last_coverage = heuristic.getCoverage();
   Model* m=heuristic.get_model();
   end_time=_end_time;
+  _update_registerer _ur(m,this);
 
   tagverify_disabled=disable_tagverify;
 
@@ -238,10 +252,19 @@ Verdict::Verdict Test_engine::run(time_t _end_time,bool disable_tagverify)
   std::vector<std::string> tags=m->getSPNames();
   ssize_t action_count = m->getActionNames().size();
 
+  update_ints.clear();
+  update_ints.push_back(&action_count);
+
+  update_tags.clear();
+  update_tags.push_back(&tags);
+
   log_strarray(log,"action_name name=",
                m->getActionNames());
   log_strarray(log,"tag_name name=",
                tags);
+
+  tags_size=tags.size();
+  actions_size=action_count;
 
   log.push("test_engine");
   gettime(&start_time);
@@ -986,4 +1009,37 @@ int Test_engine::matching_end_condition(int step_count,int state, int action)
     }
   }
   return -1;
+}
+
+void Test_engine::alphabet_update(Alphabet* a) {
+  //Update action_count
+  std::vector<std::string>& acts(a->getActionNames());
+  std::vector<std::string>& tags(a->getSPNames());
+
+  int ts=tags.size();
+  int as=acts.size();
+
+  if (tags_size!=as || actions_size!=as) {
+   
+    // incorrect... will print _every_ action and tag.
+    // Only new ones should be printed. FIXME!
+    log_strarray(log,"action_name name=",
+		 acts,actions_size);
+
+    log_strarray(log,"tag_name name=",
+		 tags,tags_size);
+
+    tags_size=ts;
+    actions_size=as;
+
+    for(std::list<ssize_t*>::iterator i=update_ints.begin();
+	i!=update_ints.end();++i) {
+      *(*i) = acts.size();
+    }
+
+    for(std::list<std::vector<std::string>*>::iterator i=update_tags.begin();
+	i!=update_tags.end();++i) {
+      *(*i) = tags;
+    }
+  }
 }

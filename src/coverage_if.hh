@@ -66,12 +66,12 @@ public:
     return errormsg;
   }
 
-  virtual bool set_instance(int instance) {
-    if (left->set_instance(instance)) {
-      if (right->set_instance(instance)) {
+  virtual bool set_instance(int instance,bool restart=false) {
+    if (left->set_instance(instance,restart)) {
+      if (right->set_instance(instance,restart)) {
 	return true;
       }
-      left->set_instance(0);
+      left->set_instance(0,restart);
     }
     return false;
   }

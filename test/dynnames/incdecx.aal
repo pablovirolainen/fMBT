@@ -12,6 +12,7 @@ adapter_init {
         x -= 1
     def test_decx():
         print "hello from decx"
+        return 2
     add_input("decx",
         adapter = test_decx,
         guard = lambda: x > 1,

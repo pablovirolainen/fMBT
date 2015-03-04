@@ -182,7 +182,6 @@ int aal_remote::alphabet_getint(GIOChannel* out,GIOChannel* in,Log& log,
   return r;
 }
 
-
 int aal_remote::adapter_execute(int action,const char* params) {
   while(g_main_context_iteration(NULL,FALSE));
 

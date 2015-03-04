@@ -34,7 +34,7 @@ public:
     return std::string("const:")+to_string(val);
   }
 
-  virtual bool set_instance(int instance) {
+  virtual bool set_instance(int instance,bool restart=false) {
     return true;
   }
 

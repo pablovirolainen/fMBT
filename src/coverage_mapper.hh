@@ -60,6 +60,7 @@ public:
   virtual void add_result_action(std::string* name);
   virtual void add_component(unsigned index,std::string& name,bool tau=true);
 
+  virtual bool set_instance(int instance,bool restart=false);
   virtual void set_model(Model* _model);
 protected:
   bool pload(std::string& name);

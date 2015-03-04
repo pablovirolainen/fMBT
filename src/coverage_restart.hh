@@ -36,6 +36,22 @@ public:
 
   virtual float getCoverage();
 
+  virtual bool set_instance(int instance,bool restart=false) {
+    if (left->set_instance(instance,restart)) {
+      if (right->set_instance(instance,restart)) {
+	instance_map[current_instance]=previous;
+	if (restart) {
+	  instance_map[instance]=0;
+	} 
+	previous=instance_map[instance];
+
+	return true;
+      }
+      left->set_instance(0,restart);
+    }
+    return false;
+  }
+
   virtual int fitness(int* actions,int n, float* fitness) {
     return 0;
   }
@@ -54,12 +70,24 @@ protected:
   std::stack<float> psave;
   float previous;
   int push_depth;
+private:
+  std::map<int,float> instance_map;
 };
 
 class Coverage_Noprogress: public Coverage_Restart {
 public:
   Coverage_Noprogress(Log&l, std::string& params);
 
+  virtual bool set_instance(int instance,bool restart=false) {
+    if (Coverage_Restart::set_instance(instance,restart)) {
+      instance_map[current_instance]=std::pair<int,float>(noprog,lp);
+      noprog=instance_map[current_instance].first;
+      lp    =instance_map[current_instance].second;
+      current_instance=instance;
+      return true;
+    }
+    return false;
+  }
   virtual ~Coverage_Noprogress(){}
   virtual void push();
   virtual void pop();
@@ -68,6 +96,8 @@ protected:
   int     noprog;
   float   lp;
   int     noplimit;
+private:
+  std::map<int, std::pair<int,float> > instance_map;
 };
 
 #endif

@@ -36,19 +36,23 @@ public:
   virtual ~Coverage_exec_filter();
   virtual std::string stringify();
 
-  virtual bool set_instance(int instance) {
+  virtual bool set_instance(int instance,bool restart=false) {
     if (current_instance!=instance) {
       instance_map_efilter[current_instance]=std::pair<
 	std::vector<std::pair<int,std::vector<int> > >, bool>(executed,online);
-      
-      std::map<int,std::pair<std::vector<std::pair<int,std::vector<int> > >,bool> >::iterator i = instance_map_efilter.find(instance);
-      
-      if (i == instance_map_efilter.end()) {
+
+      if (restart) {	
 	online=false;
 	executed.clear();
       } else {
-	online = i->second.second;
-	executed = i->second.first;
+	std::map<int,std::pair<std::vector<std::pair<int,std::vector<int> > >,bool> >::iterator i = instance_map_efilter.find(instance);
+	if (i == instance_map_efilter.end()) {
+	  online=false;
+	  executed.clear();
+	} else {
+	  online = i->second.second;
+	  executed = i->second.first;
+	}
       }
     }
 

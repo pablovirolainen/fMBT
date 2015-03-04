@@ -50,6 +50,7 @@ public:
   virtual void execute(std::vector<int>& action);
   virtual int  observe(std::vector<int> &action,bool block=false);
   virtual int check_tags(int* tag,int len,std::vector<int>& t);
+  virtual void alphabet_update(Alphabet*);
 protected:
   static std::string es;
 #ifdef NEEDS_MINGWHACK
