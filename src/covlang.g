@@ -29,6 +29,7 @@ typedef struct _node {
   int i;
 } cnode;
 #define D_ParseNode_User cnode
+int cnode_size = sizeof(cnode);
 Coverage_Market* cobj;
 
 #include "d/d.h"

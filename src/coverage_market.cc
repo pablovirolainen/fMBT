@@ -141,11 +141,11 @@ extern D_ParserTables parser_tables_covlang;
 }
 
 extern Coverage_Market* cobj;
-
+extern int cnode_size;
 void Coverage_Market::add_requirement(std::string& req)
 {
   cobj=this;
-  D_Parser *p = new_D_Parser(&parser_tables_covlang, 32);
+  D_Parser *p = new_D_Parser(&parser_tables_covlang, cnode_size);
   D_ParseNode* ret=dparse(p,(char*)req.c_str(),req.length());
   status&=p->syntax_errors==0;
 
@@ -223,10 +223,13 @@ Coverage_Market::unit_tag* Coverage_Market::req_rx_tag(const char m,const std::s
     uset.push_back(std::pair<Coverage_Market::unit_tag*, bool>(u2,false));
   }
 
-
   Coverage_Market::unit_tag* u=NULL;
 
   taghelper(op,count,0,u,uset,exactly);
+
+  for(unsigned i=0;i<tags.size();i++) {
+    delete uset[i].first;
+  }
 
   if (u==NULL) {
     abort();
