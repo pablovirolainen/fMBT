@@ -30,6 +30,11 @@ Learning::Learning(Log& l):suggested(false),suggested_action(Alphabet::ERROR),
   log.ref();
 }
 
+Learning::~Learning()
+{
+  log.unref();
+}
+
 Learning* new_learning(Log& l, std::string& s) {
   std::string name,option;
   param_cut(s,name,option);

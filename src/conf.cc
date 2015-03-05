@@ -86,9 +86,11 @@ Conf::Conf(Log& l, bool debug_enabled)
   set_on_inconc("exit(1)");
 }
 
+extern int conf_node_size;
+
 void Conf::load(std::string& name,std::string& content)
 {
-  D_Parser *p = new_D_Parser(&parser_tables_conf, 512);
+  D_Parser *p = new_D_Parser(&parser_tables_conf, conf_node_size);
   p->loc.pathname = name.c_str();
   char *s;
 
@@ -246,11 +248,12 @@ void Conf::load(std::string& name,std::string& content)
     if (!tmp) {
       RETURN_ERROR_VOID(i->second,"Can't create learning \"" + i->first + "\"");
     }
+
     tmp->lineno=i->second;
     if (!tmp->status) {
       RETURN_ERROR_VOID(tmp->lineno,"learning error: " + tmp->stringify());
     }
-    
+
     if ((dynamic_cast<Learn_time*>(tmp))!=NULL) {
       tmp->setAlphabet(model);
       lp->lt=tmp;
@@ -266,8 +269,8 @@ void Conf::load(std::string& name,std::string& content)
 	lp->la=(Learn_action*)tmp;
       }
     }
-    learning=lp;
   }
+  learning=lp;
   _learning.clear();
 
   if (learning && !learning->status) {
@@ -555,10 +558,14 @@ Conf::~Conf() {
   if (model)
     delete model;
 
+  if (learning)
+    delete learning;
+
   adapter=NULL;
   heuristic=NULL;
   model=NULL;
   coverage=NULL;
+  learning=NULL;
 
   log.unref();
 }
