@@ -102,14 +102,16 @@ public:
 
   virtual void set_model(Model* _model)
   {
-    std::vector<int> tmp;
     model=_model;
     add_requirement(params);
     if (status) {
       int* p;
       int j=model->getprops(&p);
-      prev.assign(p,p+j);
-      tmp=prev;
+      std::vector<int> tmp;
+      if (j) {
+	tmp.assign(p,p+j);
+      }
+      prev=tmp;
       execute(0);
       prev=tmp;
     }
@@ -198,6 +200,7 @@ public:
   class unit_coverage_tag: public unit {
   public:
     unit_coverage_tag(std::string* s,Coverage_Market* _m):p(*s),m(_m) {
+      delete s;
       if (m) {
 	child = new Coverage_Prop(m->log,p);
 
