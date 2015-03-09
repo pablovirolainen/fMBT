@@ -546,21 +546,21 @@ Conf::~Conf() {
   for_each(inc_hooks.begin(),inc_hooks.end(),hook_delete);
   for_each(error_hooks.begin(),error_hooks.end(),hook_delete);
 
-  if (heuristic)
+  if (heuristic) {
     delete heuristic;
-
-  if (coverage)
+  }
+  if (coverage) {
     delete coverage;
-
-  if (adapter)
+  }
+  if (adapter) {
     delete adapter;
-
-  if (model)
+  }
+  if (model) {
     delete model;
-
-  if (learning)
+  }
+  if (learning) {
     delete learning;
-
+  }
   adapter=NULL;
   heuristic=NULL;
   model=NULL;

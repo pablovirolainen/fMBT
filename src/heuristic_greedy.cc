@@ -86,14 +86,13 @@ Heuristic_greedy::Heuristic_greedy(Log& l,bool _adaptive,
   }
 
   r = Random::default_random();
-  r->ref();
 }
 
 Heuristic_greedy::~Heuristic_greedy()
 {
   hg=NULL;
 
-  if (r)
+  if (r) 
     r->unref();
 
   if (randomise_function) {

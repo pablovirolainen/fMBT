@@ -42,6 +42,10 @@ public:
     Coverage_exec_filter::set_instance(instance,restart);
     instance_map_report[current_instance]=was_online;
 
+    if (restart) {
+      instance_map_report.clear();
+    }
+
     if (instance_map_report.find(instance)==
 	instance_map_report.end()) {
       was_online=false;

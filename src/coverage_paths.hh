@@ -31,8 +31,8 @@ public:
     Coverage_report(l,_from,_to,_drop), filter_outputs(false),af(false),pf(true),unique(true) { traces_needed=false; }
   
   virtual ~Coverage_paths_base() {}
-  virtual bool set_instance(int instance) {
-    Coverage_report::set_instance(instance);
+  virtual bool set_instance(int instance,bool restart=false) {
+    Coverage_report::set_instance(instance,restart);
     current_instance=instance;
     return true;
   }

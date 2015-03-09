@@ -111,7 +111,7 @@ node: persistent tag_spec actionname persistent tag_spec  { $$.type='e'; $$.u = 
                 free(ss);
                 ${reject};
             } else {
-                D_Parser *p = new_D_Parser(&parser_tables_covlang, 32);
+                D_Parser *p = new_D_Parser(&parser_tables_covlang, cnode_size);
                 p->start_state = D_START_STATE_expr;
                 p->loc.pathname=ss;
                 p->save_parse_tree=1;

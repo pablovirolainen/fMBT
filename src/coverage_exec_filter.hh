@@ -37,27 +37,28 @@ public:
   virtual std::string stringify();
 
   virtual bool set_instance(int instance,bool restart=false) {
+
+    if (restart) {
+      instance_map_efilter.clear();
+      online=false;
+      executed.clear();
+    }
+
     if (current_instance!=instance) {
       instance_map_efilter[current_instance]=std::pair<
 	std::vector<std::pair<int,std::vector<int> > >, bool>(executed,online);
 
-      if (restart) {	
+      std::map<int,std::pair<std::vector<std::pair<int,std::vector<int> > >,bool> >::iterator i = instance_map_efilter.find(instance);
+
+      if (i == instance_map_efilter.end()) {
 	online=false;
 	executed.clear();
       } else {
-	std::map<int,std::pair<std::vector<std::pair<int,std::vector<int> > >,bool> >::iterator i = instance_map_efilter.find(instance);
-	if (i == instance_map_efilter.end()) {
-	  online=false;
-	  executed.clear();
-	} else {
-	  online = i->second.second;
-	  executed = i->second.first;
-	}
+	online = i->second.second;
+	executed = i->second.first;
       }
     }
-
-    return false;
-    
+    return true;
   }
 
   virtual void push(){

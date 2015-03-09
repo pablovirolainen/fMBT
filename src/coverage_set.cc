@@ -34,6 +34,8 @@ extern "C" {
   extern D_ParserTables parser_tables_set;
 }
 
+extern int set_node_size;
+
 class Coverage_setw: public Coverage_set {
 public:
   Coverage_setw(Log& l,std::string params):
@@ -45,7 +47,7 @@ public:
     filtervec = &_fv;
     asize=&allowed_set_size;
     mcount_=&max_count;
-    D_Parser *p = new_D_Parser(&parser_tables_set, 512);
+    D_Parser *p = new_D_Parser(&parser_tables_set, set_node_size);
     remove_force(params);
     bool ret=dparse(p,(char*)params.c_str(),strlen(params.c_str()));
     ret=p->syntax_errors==0 && ret;

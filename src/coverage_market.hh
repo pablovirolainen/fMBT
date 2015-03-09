@@ -585,7 +585,7 @@ public:
 
   class unit_manyleaf: public unit {
   public:
-    unit_manyleaf(std::string _action):actions(1),action(_action) {}
+    unit_manyleaf(std::string _action):actions(0),action(_action) {}
     virtual ~unit_manyleaf() {}
 
     virtual void alphabet_update(Alphabet*);
