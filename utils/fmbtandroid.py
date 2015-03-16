@@ -1895,7 +1895,7 @@ class _AndroidDeviceConnection(fmbtgti.GUITestConnection):
         self._stopOnError = kwArgs.pop("stopOnError", True)
         self._monkeyOptions = kwArgs.pop("monkeyOptions", [])
         self._screencapArgs = kwArgs.pop("screencapArgs", [])
-        self._screencapFormat = kwArgs.pop("screencapFormat", "png")
+        self._screencapFormat = kwArgs.pop("screencapFormat", "raw")
         self.setScreenToDisplayCoords(
             kwArgs.pop("screenToDisplay", lambda x, y: (x, y)))
         self.setDisplayToScreenCoords(
@@ -2502,7 +2502,13 @@ class _AndroidDeviceConnection(fmbtgti.GUITestConnection):
             if status != 0:
                 _adapterLog(errmsg)
                 raise FMBTAndroidError(errmsg)
-            data = gzip.open(filename + ".raw").read()
+            try:
+                data = gzip.open(filename + ".raw").read()
+            except Exception, e:
+                msg = 'reading screenshot from "%s" failed: %s' % (
+                    filename + ".raw", e)
+                _adapterLog(msg)
+                raise FMBTAndroidError(msg)
             os.unlink(filename + ".raw")
 
             width, height, fmt = struct.unpack("<LLL", data[:12])
