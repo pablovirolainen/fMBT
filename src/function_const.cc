@@ -20,6 +20,22 @@
 #define _FUNCTION_INTERNAL_
 #include "function_const.hh"
 
+Function_const::Function_const(int _val):stored_val(_val) {
+  prefer=INT;
+  stored_fval=stored_val;
+}
+
+
+Function_const::Function_const(signed long _val):stored_val(_val) {
+  prefer=INT;
+  stored_fval=stored_val;
+}
+
+Function_const::Function_const(double _val):stored_fval(_val) {
+  prefer=FLOAT;
+  stored_val=stored_fval;
+}
+
 Function_const::Function_const(const std::string& param):Function() {
   char* endp;
   if (param=="") {

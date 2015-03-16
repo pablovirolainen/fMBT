@@ -25,6 +25,7 @@
 class Function_array: public Function {
 public:
   Function_array(const std::string& param);
+  Function_array(std::vector<Function*>,Function*);
   virtual ~Function_array() {
     if (index) {
       delete index;

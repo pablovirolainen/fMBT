@@ -21,6 +21,13 @@
 #include "function_array.hh"
 #include "helper.hh"
 
+Function_array::Function_array(std::vector<Function*> _array,Function* _index): 
+  array(_array),index(_index)
+{
+
+}
+
+
 Function_array::Function_array(const std::string& param):index(NULL),float_index(false),modulo(false) {
   std::vector<std::string> params;
   commalist(param,params);

@@ -27,6 +27,9 @@
 #include "learn_proxy.hh"
 #include "helper.hh"
 
+#include "function_array.hh"
+#include "function_const.hh"
+
 extern int _g_simulation_depth_hint;
 
 static Heuristic_greedy* hg=NULL;
@@ -49,8 +52,8 @@ public:
 
 Heuristic_greedy::Heuristic_greedy(Log& l,bool _adaptive,
 				   const std::string& params) :
-  Heuristic(l), m_search_depth(0), m_burst(false),adaptive(_adaptive),
-  end_condition(false)
+  Heuristic(l), m_search_depth(NULL), m_burst(false),adaptive(_adaptive),
+  const_index(NULL),array_size(0),end_condition(false)
 {
   hg=this;
   std::string s;
@@ -62,9 +65,31 @@ Heuristic_greedy::Heuristic_greedy(Log& l,bool _adaptive,
     s=fa[0];
   }
 
-  m_search_depth = atoi(s.c_str());
-  if (strchr(s.c_str(), 'b')) {
+  // We have a potential problem. If function name ends with "b", this code 
+  // thinks we mean <prefix> with burst mode on. So no functions ending with b :)
+  if (g_str_has_suffix(s.c_str(), "b")) {
     m_burst = true;
+    size_t found=s.find_last_of("b");
+    s=s.substr(0,found);
+  }
+
+  m_search_depth = new_function(s);
+
+  if (!m_search_depth) {
+    errormsg="Can't create function \""+s+"\"";
+    status=false;
+    return;
+  }
+
+  if (!m_search_depth->status) {
+    errormsg=m_search_depth->status;
+    status=false;
+  } else {
+    Function_array* a=dynamic_cast<Function_array*>(m_search_depth);
+    if (a) {
+      const_index=dynamic_cast<Function_const*>(a->index);
+      array_size=a->array.size();
+    }
   }
 
   if (fa.size()>1) {
@@ -169,7 +194,7 @@ int Heuristic_greedy::getIAction()
     goto done;
   }
 
-  if (m_search_depth < 1) {
+  if (m_search_depth->val() < 1) {
     /* Do a very fast lookup */
     float* f = new float[input_action_count];
     int pos = my_coverage->fitness(input_actions, input_action_count, f);
@@ -194,28 +219,40 @@ int Heuristic_greedy::getIAction()
 
       /* Spend more time for better coverage */
       if (adaptive) {
-	AlgPathToAdaptiveCoverage alg(*model,m_search_depth, learn, randomise_function);
+	AlgPathToAdaptiveCoverage alg(*model,m_search_depth->val(), learn, randomise_function);
 	score = alg.search(*my_coverage, m_path);
-
 	end_condition=(score<=current_score);
-
-	if (!alg.status) {
+       	if (!alg.status) {
 	  status=false;
 	  errormsg = "Alg: " + alg.errormsg;
 	  retval = 0;
 	  goto done;
 	}
       } else {
-	AlgPathToBestCoverage alg(*model,m_search_depth, learn, randomise_function);
-	score = alg.search(*my_coverage, m_path);
+	AlgPathToBestCoverage alg(*model,m_search_depth->val(), learn, 
+				  randomise_function);
+	do {
+	  score = alg.search(*my_coverage, m_path,m_search_depth->val());
+	  
+	  if (!alg.status) {
+	    status=false;
+	    errormsg = "Alg: " + alg.errormsg;
 
+	    retval = 0;
+	    goto done;
+	  }
+	  if (score<=current_score) {
+	    log.print("<No improvement at depth %i/>\n",m_search_depth->val());
+	  }
+	} while (const_index && score<=current_score && (const_index->stored_val++)<array_size);
 	end_condition=(score<=current_score);
-
-	if (!alg.status) {
-	  status=false;
-	  errormsg = "Alg: " + alg.errormsg;
-	  retval = 0;
-	  goto done;
+	if (const_index) {
+	  log.print("<depth %i/>\n",m_search_depth->val());
+	  // Next time try a bit smaller value
+	  const_index->stored_val--;
+	  if (const_index->stored_val<0) {
+	    const_index->stored_val=0;
+	  }
 	}
       }
 

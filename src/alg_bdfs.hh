@@ -68,6 +68,8 @@ public:
     virtual ~AlgPathToBestCoverage() {};
 
     double search(Coverage& coverage, std::vector<std::pair<int,double> >& path);
+    double search(Coverage& coverage, std::vector<std::pair<int,double> >& path,
+		  int search_depth);
 protected:
     virtual double evaluate();
     virtual void doExecute(int action,bool push=true);
@@ -94,8 +96,10 @@ public:
 		    Function* function = NULL):
       AlgBDFS(_model,searchDepth, learn,function) {}
     virtual ~AlgPathToAction() {}
-
+  
     double search(int find_this_action, std::vector<std::pair<int,double> >& path);
+    double search(int find_this_action, std::vector<std::pair<int,double> >& path,
+		  int search_depth);
 protected:
     virtual double evaluate();
     virtual void doExecute(int action,bool push=true);
