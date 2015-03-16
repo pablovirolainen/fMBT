@@ -56,12 +56,12 @@ Heuristic_greedy::Heuristic_greedy(Log& l,bool _adaptive,
   const_index(NULL),array_size(0),end_condition(false)
 {
   hg=this;
-  std::string s;
+  std::string s("0");
 
   std::vector<std::string> fa;
-  commalist(params,fa);  
+  commalist(params,fa);
 
-  if (fa.size()>0) {
+  if (fa.size()>0 && fa[0].length()>0) {
     s=fa[0];
   }
 
@@ -81,8 +81,8 @@ Heuristic_greedy::Heuristic_greedy(Log& l,bool _adaptive,
     return;
   }
 
-  if (!m_search_depth->status) {
-    errormsg=m_search_depth->status;
+  if (!(m_search_depth->status)) {
+    errormsg="Error at depth("+s+") "+m_search_depth->errormsg;
     status=false;
   } else {
     Function_array* a=dynamic_cast<Function_array*>(m_search_depth);
