@@ -162,6 +162,33 @@ int Heuristic_greedy::getAction()
   return actions[pos];
 }
 
+double Heuristic_greedy::search(AlgPathToBestCoverage& alg,double current_score) {
+  double score;
+  do {
+    score = alg.search(*my_coverage, m_path,m_search_depth->val());
+    
+    if (!alg.status) {
+      status=false;
+      errormsg = "Alg: " + alg.errormsg;
+      
+      return 0;
+    }
+    if (const_index && score<=current_score) {
+      log.print("<No improvement at depth %i/>\n",m_search_depth->val());
+    }
+  } while (const_index && score<=current_score && (const_index->stored_val++)<array_size);
+
+  if (const_index) {
+    log.print("<depth %i/>\n",m_search_depth->val());
+    // Next time try a bit smaller value
+    const_index->stored_val--;
+    if (const_index->stored_val<0) {
+      const_index->stored_val=0;
+    }
+  }
+  return score;
+}
+
 int Heuristic_greedy::getIAction()
 {
   if (!status) {
@@ -219,42 +246,20 @@ int Heuristic_greedy::getIAction()
 
       /* Spend more time for better coverage */
       if (adaptive) {
-	AlgPathToAdaptiveCoverage alg(*model,m_search_depth->val(), learn, randomise_function);
-	score = alg.search(*my_coverage, m_path);
-	end_condition=(score<=current_score);
-       	if (!alg.status) {
-	  status=false;
-	  errormsg = "Alg: " + alg.errormsg;
-	  retval = 0;
-	  goto done;
-	}
+	AlgPathToAdaptiveCoverage alg(*model,m_search_depth->val(), learn,
+				      randomise_function);
+	score = search(alg,current_score);
       } else {
 	AlgPathToBestCoverage alg(*model,m_search_depth->val(), learn, 
 				  randomise_function);
-	do {
-	  score = alg.search(*my_coverage, m_path,m_search_depth->val());
-	  
-	  if (!alg.status) {
-	    status=false;
-	    errormsg = "Alg: " + alg.errormsg;
-
-	    retval = 0;
-	    goto done;
-	  }
-	  if (score<=current_score) {
-	    log.print("<No improvement at depth %i/>\n",m_search_depth->val());
-	  }
-	} while (const_index && score<=current_score && (const_index->stored_val++)<array_size);
-	end_condition=(score<=current_score);
-	if (const_index) {
-	  log.print("<depth %i/>\n",m_search_depth->val());
-	  // Next time try a bit smaller value
-	  const_index->stored_val--;
-	  if (const_index->stored_val<0) {
-	    const_index->stored_val=0;
-	  }
-	}
+	score = search(alg,current_score);
+      }	
+      if (!status) {
+	retval = 0;
+	goto done;
       }
+
+      end_condition=(score<=current_score);
 
       if (m_path.size() > 0) {
         std::reverse(m_path.begin(), m_path.end());

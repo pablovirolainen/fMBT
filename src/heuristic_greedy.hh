@@ -29,6 +29,7 @@
 
 class Random;
 class Function;
+class AlgPathToBestCoverage;
 #include "function_const.hh"
 
 class Heuristic_greedy : public Heuristic {
@@ -41,6 +42,7 @@ public:
   virtual int getAction();
   virtual int getIAction();
 private:
+  inline double search(AlgPathToBestCoverage& alg,double current_score);
   Function* m_search_depth;
   bool m_burst;
   std::vector<std::pair<int,double> > m_path;
