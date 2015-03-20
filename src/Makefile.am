@@ -26,7 +26,7 @@ noinst_HEADERS = windows_helper.cc aalang.hh aalang_cpp.hh aalang_java.hh aalang
 
 pkginclude_HEADERS = aal.hh adapter.hh alphabet.hh awrapper.hh factory.hh helper.hh log.hh model.hh mwrapper.hh params.hh reffable.hh verdict.hh writable.hh
 
-noinst_HEADERS += conf.g lts.g mrules.g covlang.g xrules.g lang.g uconf.g filter.g weight.g set.g paths.g
+noinst_HEADERS += conf.g lts.g mrules.g covlang.g xrules.g lang.g uconf.g filter.g weight.g set.g paths.g date.g
 
 noinst_HEADERS += Android.mk Application.mk
 if RDRND
@@ -105,6 +105,9 @@ set.g.d_parser.cc: set.g d/libdparse.a
 
 paths.g.d_parser.cc: paths.g d/libdparse.a
 	d/make_dparser -o paths.g.d_parser.cc -i paths $(VPATH)/paths.g
+
+date.g.d_parser.cc: date.g d/libdparse.a
+	d/make_dparser -o date.g.d_parser.cc -i date $(VPATH)/date.g
 
 clean-local:
 	(cd d; make clean)

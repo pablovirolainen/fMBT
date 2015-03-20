@@ -29,9 +29,69 @@
 
 End_condition::End_condition(Conf* _conf,Counter _counter,
 			     Verdict::Verdict v, const std::string& p)
-  : verdict(v),counter(_counter), param(p),
-    param_float(-1.0), param_long(-1), param_time(-1),notify_step(-1)
+  : verdict(v),counter(_counter), param(p), param_float(-1.0),
+    param_long(-1), param_time(-1),notify_step(-1),conf(_conf)
 {
+}
+
+std::string End_condition::stringify() {
+  if (!status) return Writable::stringify();
+  std::string ret;
+
+  switch (verdict) {
+  case Verdict::PASS:
+    ret="pass";
+    break;
+  case Verdict::FAIL:
+    ret="fail";
+    break;
+  case Verdict::INCONCLUSIVE:
+    ret="inconc";
+    break;
+  case Verdict::W_ERROR:
+    ret="error";
+    break;
+  default:
+    break;
+  }
+
+  std::string name;
+  switch(counter) {
+  case STEPS:
+    name="steps";
+    break;
+  case COVERAGE:
+    name="coverage";
+    break;
+  case STATETAG:
+    name="tag";
+    break;
+  case DURATION:
+    name="duration";
+    break;
+  case NOPROGRESS:
+    name="noprogress";
+    break;
+  case DEADLOCK:
+    name="deadlock";
+    break;
+  case TAGVERIFY:
+    name="failing_tag";
+    break;
+  case ACTION:
+    name="ACTION";
+  case STATUS:
+    name="STATUS";
+  default:
+    return "";
+  }
+
+  if (param!="") {
+    ret=ret+"\t= "+name+"("+param+")";
+  } else {
+    ret=ret+"\t= "+name;
+  }
+  return ret;
 }
 
 End_condition::~End_condition()
@@ -65,12 +125,44 @@ End_condition* new_end_condition(Verdict::Verdict v,const std::string& s,Conf* c
   return ret;
 }
 
+extern int date_node_size;
+
+#include "dparse.h"
+
+extern "C" {
+extern D_ParserTables parser_tables_date;
+}
+
+extern int d_verbose_level;
+
 End_condition_duration::End_condition_duration
 (Conf* _conf,Verdict::Verdict v, const std::string& p):
     End_condition(_conf,DURATION,v,p) {
     er="time limit reached";
     status=true;
     param_time = -1;
+
+    D_Parser *parser = new_D_Parser(&parser_tables_date, date_node_size);
+    parser->save_parse_tree=true;
+    D_ParseNode *node=dparse(parser,(char*)p.c_str(),std::strlen(p.c_str()));
+    GTimeVal tv;
+    if (!node) {
+       status=false;
+       errormsg="Something wrong with date '"+p+"'";
+      return;
+    }
+    if (g_date_time_to_timeval((GDateTime *)(node->user),&tv)) {
+       param_time = tv.tv_sec;
+       param_long = tv.tv_usec;
+       struct timeval ttv;
+       gettime(&ttv);
+       _conf->log.debug("Until %i,current %i",param_time,ttv.tv_sec);
+    } else {
+       status=false;
+       errormsg="Something wrong with date '"+p+"'";
+    }
+
+    /*
 #ifndef DROI
     char* out = NULL;
     int stat;
@@ -103,8 +195,8 @@ End_condition_duration::End_condition_duration
 #else
     char* endp;
     long r = strtol(param.c_str(), &endp, 10);
-    if (*endp == 0) {
-      param_time = r;
+    if (*endp == 0) { 
+     param_time = r;
       status = true;
     } else {
       // Error on str?
@@ -112,6 +204,7 @@ End_condition_duration::End_condition_duration
       status = false;
     }
 #endif
+    */
   }
 
 
