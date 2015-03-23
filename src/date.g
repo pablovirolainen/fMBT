@@ -100,21 +100,22 @@ items: { $$ = _node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true;
             }
             if (!$1.rel && $0.date) {
                 // error..
+                abort();
             }
+
             if ($1.rel) {
                 if ($0.rel) {
-                    $$ = _node($0.year+$1.year,
-                               $0.month+$1.month,
-                               $0.day+$1.day,
-                               $0.hour+$1.hour,
-                               $0.min+$1.min,
-                               $0.sec+$1.sec);
-                } else {
-                    $$.date = g_date_time_add_full($0.date,
-                                                   $1.year,$1.month,$1.day,$1.hour,
-                                                   $1.min,$1.sec);
-                    g_date_time_unref($0.date);
+                    if ($$.zone) {
+                        $0.date=g_date_time_new_now($$.zone);
+                    } else {
+                        $0.date=g_date_time_new_now_local();
+                    }
                 }
+                $$.date= g_date_time_add_full($0.date,
+                                              $1.year,$1.month,$1.day,
+                                              $1.hour,$1.min,$1.sec);
+                g_date_time_unref($0.date);
+                $$.rel=false;
             } else {
               $$=$1;
             }
@@ -245,8 +246,8 @@ iso_8601_time:
 
 // We don't need X Y ago ?
 
-rel: simple_rel { $$ = $0; };
-//     rel_day    { $$ = $0; } ;
+rel: simple_rel { $$ = $0; } |
+     rel_day    { $$ = $0; } ;
 
 rel_day: 'tomorrow'           { $$ = _node(0,0, 1,0,0,0); } |
         'yesterday'           { $$ = _node(0,0,-1,0,0,0); } |
