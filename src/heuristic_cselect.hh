@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef __heuristic_mrandom_hh__
-#define __heuristic_mrandom_hh__
+#ifndef __heuristic_cselect_hh__
+#define __heuristic_cselect_hh__
 
 #include <vector>
 #include <string>
@@ -29,16 +29,16 @@
 #include <stdlib.h>
 #include <time.h>
 
-class Random;
-
-class Heuristic_mrandom : public Heuristic_multichild {
+class Heuristic_cselect : public Heuristic_multichild {
 public:
-  Heuristic_mrandom(Log& l,const std::string& params);
-  virtual ~Heuristic_mrandom();
+  Heuristic_cselect(Log& l,const std::string& params);
+  virtual bool execute(int action);
+  virtual ~Heuristic_cselect();
   virtual int getAction();
   virtual int getIAction();
+  virtual void set_model(Model* _model);
 protected:
-  Random* r;
+  std::vector<Coverage*> cc;
 };
 
 #endif

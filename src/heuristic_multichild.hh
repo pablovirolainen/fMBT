@@ -17,28 +17,28 @@
  *
  */
 
-#ifndef __heuristic_mrandom_hh__
-#define __heuristic_mrandom_hh__
+#ifndef __heuristic_multichild_hh__
+#define __heuristic_multichild_hh__
 
 #include <vector>
 #include <string>
 
-#include "heuristic_multichild.hh"
+#include "heuristic.hh"
 #include "coverage.hh"
 #include "lts.hh"
 #include <stdlib.h>
 #include <time.h>
 
-class Random;
-
-class Heuristic_mrandom : public Heuristic_multichild {
+class Heuristic_multichild : public Heuristic {
 public:
-  Heuristic_mrandom(Log& l,const std::string& params);
-  virtual ~Heuristic_mrandom();
-  virtual int getAction();
-  virtual int getIAction();
+  Heuristic_multichild(Log& l);
+  virtual ~Heuristic_multichild();
+  virtual bool execute(int action);
+  virtual float getCoverage();
+  virtual void set_model(Model* _model);
+  virtual void set_coverage(Coverage* c);
 protected:
-  Random* r;
+  std::vector<std::pair<float,Heuristic*> > h;
 };
 
 #endif

@@ -17,52 +17,61 @@
  *
  */
 
-#include "heuristic_mrandom.hh"
+#include "heuristic_cselect.hh"
 #include "helper.hh"
 #include <cstdlib>
 #include <cstring>
 
 #include "random.hh"
 
-Heuristic_mrandom::~Heuristic_mrandom()
+Heuristic_cselect::~Heuristic_cselect()
 {
-  if (r) {
-    r->unref();
-    r=NULL;
+  for(unsigned i=0;i<cc.size();i++) {
+    delete cc[i];
   }
 }
 
-Heuristic_mrandom::Heuristic_mrandom(Log& l,const std::string& params) :
+Heuristic_cselect::Heuristic_cselect(Log& l,const std::string& params) :
   Heuristic_multichild(l)
 {
-  float total=0;
   std::vector<std::string> s;
-
-  r = Random::default_random();
 
   commalist(params,s);
 
   for(unsigned i=0;i+1<s.size();i+=2) {
-    float f=atof(s[i].c_str());
-    if (f<=0.0) {
-      f=1.0;
+    Coverage* cov=new_coverage(log,s[i]);
+
+    if (cov==NULL) {
+      status=false;
+      errormsg=std::string("Can't create coverage \"")+s[i]+
+        std::string("\"");
+      return;
+    }
+
+    if (cov->status==false) {
+      status=false;
+      errormsg=cov->errormsg;
+      return;
     }
 
     Heuristic* heu=new_heuristic(log,s[i+1]);
 
     if (heu==NULL) {
+      delete cov;
       status=false;
       errormsg=std::string("Can't create heuristic \"")+s[i+1]+
         std::string("\"");
       return;
     }
     if (heu->status==false) {
+      delete cov;
       status=false;
       errormsg=heu->errormsg;
       return;
     }
-    total+=f;
-    h.push_back(std::pair<float,Heuristic*>(total,heu));
+
+    h.push_back(std::pair<float,Heuristic*>(0,heu));
+    cc.push_back(cov);
   }
 
   if (h.empty()) {
@@ -70,34 +79,45 @@ Heuristic_mrandom::Heuristic_mrandom(Log& l,const std::string& params) :
     errormsg=std::string("no subheuristics?");
   }
 
-  for(unsigned i=0;i<h.size();i++) {
-    h[i].first=h[i].first/total;
-  }
-
 }
 
-int Heuristic_mrandom::getAction()
-{
-  float cut=r->drand48();
+bool Heuristic_cselect::execute(int action) {
+  for(unsigned i=0;i<cc.size();i++) {
+    cc[i]->execute(action);
+  }
+  return Heuristic_cselect::execute(action);
+}
 
+void Heuristic_cselect::set_model(Model* _model) {
+  for(unsigned i=0;i<cc.size();i++) {
+    cc[i]->set_model(_model);
+    if (! cc[i]->status) {
+      status=false;
+      errormsg=cc[i]->errormsg;
+      return;
+    }
+  }
+  Heuristic_multichild::set_model(_model);
+}
+
+int Heuristic_cselect::getAction()
+{
   for(unsigned i=0;i<h.size();i++) {
-    if (cut<h[i].first) {
+    if (cc[i]->getCoverage()>=1.0) {
       return h[i].second->getAction();
     }
   }
-  return h[0].second->getAction();
+  return h.rbegin()->second->getAction();
 }
 
-int Heuristic_mrandom::getIAction()
+int Heuristic_cselect::getIAction()
 {
-  float cut=r->drand48();
-
   for(unsigned i=0;i<h.size();i++) {
-    if (cut<h[i].first) {
+    if (cc[i]->getCoverage()>=1.0) {
       return h[i].second->getIAction();
     }
   }
-  return h[0].second->getIAction();
+  return h.rbegin()->second->getAction();
 }
 
-FACTORY_DEFAULT_CREATOR(Heuristic, Heuristic_mrandom, "mrandom")
+FACTORY_DEFAULT_CREATOR(Heuristic, Heuristic_cselect, "cselect")
