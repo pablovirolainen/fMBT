@@ -24,34 +24,21 @@
 #include <string>
 #include <string.h>
 
-typedef struct _node {
-  GDateTime* date;
-  bool rel;
-  long i;
-  int year,month,day,hour,min,sec;
-  GTimeZone *zone;
-  _node():date(NULL),rel(false),i(0),
-          year(0),month(0),day(0),hour(0),min(0),sec(0),zone(NULL)
-  { }
-    
-  _node(int _y,int _m,int _d,int _h,int _mi, int s):date(NULL),rel(true),i(0),
-      year(_y),month(_m),day(_d),hour(_h),min(_mi),sec(s)
-      { }
-} node;
+#include "date_node.h"
 
-int date_node_size = sizeof (node);
+int date_node_size = sizeof (date_node);
 
-#define D_ParseNode_User node
+#define D_ParseNode_User date_node
 
 }
 
-time: spec { $$=$0; } | items { 
+time: spec { $$=$0; } | items {
+            GDateTime* tmp;
             $$.zone=$0.zone;
-            if ($0.date) { 
+            if ($0.date) {
                 $$.date=$0.date;
             } else {
                 //printf("items hour %i ,min %i,sec %i\n",$0.hour,$0.min,$0.sec);
-                GDateTime* tmp;
                 if ($$.zone) {
                     tmp=g_date_time_new_now($$.zone);
                 } else {
@@ -64,17 +51,21 @@ time: spec { $$=$0; } | items {
                 g_date_time_unref(tmp);
             }
             if (!$$.date) {
-                // ERROR!
+                _parser->syntax_errors++;
+                return 0;
             }
+            tmp=$$.date;
             $$.date=g_date_time_to_local($$.date);
-            printf(g_date_time_format($$.date,"%a %e.%m %Y %R\n"));
+            g_date_time_unref(tmp);
+            $$.i=42;
+            //printf(g_date_time_format($$.date,"%a %e.%m %Y %R\n"));
         };
 
 timezone: 'TZ' '=' "[a-zA-Z0-9]*" {
             char* tmp_str=strndup($n2.start_loc.s,$n2.end-$n2.start_loc.s);
-            printf("Timezone %s\n",tmp_str);
+            //printf("Timezone %s\n",tmp_str);
             $$.zone=g_time_zone_new(tmp_str);
-            printf("Zone at %p\n",$$.zone);
+            //printf("Zone at %p\n",$$.zone);
             free(tmp_str);
           };
 
@@ -92,16 +83,16 @@ spec: '@' int {
             $$.date = g_date_time_new_from_timeval_utc(&t);
         };
 
-items: { $$ = _node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true; } | items item {
+items: { $$ = _date_node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true; } | items item {
             if ($1.zone) {
                 $$.zone=$1.zone;
             } else {
                 $$.zone=$0.zone;
             }
-            if (!$1.rel && $0.date) {
-                // error..
-                abort();
-            }
+            if (!$1.rel && $0.date) { 
+                _parser->syntax_errors++;
+                return 0;
+           }
 
             if ($1.rel) {
                 if ($0.rel) {
@@ -126,14 +117,14 @@ items: { $$ = _node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true;
                 if ($$.zone) {
                     $$.date=g_date_time_new_now($$.zone);
                     if (!$$.date) {
-                        // ERROR!
-                        abort();
+                        _parser->syntax_errors++;
+                        return 0;
                     }
                 } else {
                     $$.date=g_date_time_new_now_local();
                     if (!$$.date) {
-                        // ERROR!
-                        abort();
+                        _parser->syntax_errors++;
+                        return 0;
                     }
                 }
             } else {
@@ -141,8 +132,8 @@ items: { $$ = _node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true;
             }
 
             if (!$$.date) {
-                // ERROR!
-                abort();
+                _parser->syntax_errors++;
+                return 0;
             }
 
             if ($1.year) {
@@ -188,10 +179,11 @@ items: { $$ = _node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true;
             tmp=$$.date;
 
             if (!tmp) {
-                // ERROR!
+                _parser->syntax_errors++;
+                return 0;
             }
 
-            printf("%p\n",$$.zone);
+            //printf("%p\n",$$.zone);
             if ($$.zone) {
                 $$.date=g_date_time_new($$.zone,g_date_time_get_year($$.date),g_date_time_get_month($$.date),g_date_time_get_day_of_month($$.date),$1.hour,$1.min,$1.sec);
             } else {
@@ -200,7 +192,8 @@ items: { $$ = _node(); $$.rel=true; } | timezone { $$.zone=$0.zone; $$.rel=true;
             g_date_time_unref(tmp);
 
             if (!$$.date) {
-                // ERROR!
+                _parser->syntax_errors++;
+                return 0;
             }
 
             $$.rel=false;
@@ -227,53 +220,55 @@ item: iso_8601_datetime { $$ = $0; } |
 iso_8601_datetime:
     iso_8601_date 'T' iso_8601_time { $$.date = g_date_time_new_local(
                 $0.year,$0.month,$0.day,$2.hour,$2.min,$2.sec); 
-            if (!$$.date) {
-                // ERROR!
+            if (!$$.date) { 
+                _parser->syntax_errors++;
+                return 0;
             } } |
     timezone iso_8601_date 'T' iso_8601_time { $$.date = g_date_time_new($0.zone,
                 $1.year,$1.month,$1.day,$3.hour,$3.min,$3.sec); 
             if (!$$.date) {
-                // ERROR!
+                _parser->syntax_errors++;
+                return 0;
             } } ;
 
 iso_8601_date:
-    uint sint sint { $$ = _node($0.i,$1.i,$2.i,0,0,0); };
+    uint sint sint { $$ = _date_node($0.i,$1.i,$2.i,0,0,0); };
 
 iso_8601_time:
-       int                  { $$=_node(0,0,0,$0.i,0,0); }
-     | int ':' int          { $$=_node(0,0,0,$0.i,$2.i,0); }
-     | int ':' int ':' int  { $$=_node(0,0,0,$0.i,$2.i,$4.i); } ;
+       int                  { $$=_date_node(0,0,0,$0.i,0,0); }
+     | int ':' int          { $$=_date_node(0,0,0,$0.i,$2.i,0); }
+     | int ':' int ':' int  { $$=_date_node(0,0,0,$0.i,$2.i,$4.i); } ;
 
 // We don't need X Y ago ?
 
 rel: simple_rel { $$ = $0; } |
      rel_day    { $$ = $0; } ;
 
-rel_day: 'tomorrow'           { $$ = _node(0,0, 1,0,0,0); } |
-        'yesterday'           { $$ = _node(0,0,-1,0,0,0); } |
-        ('today' | 'now')     { $$ = _node(0,0, 0,0,0,0); } ;
+rel_day: 'tomorrow'           { $$ = _date_node(0,0, 1,0,0,0); } |
+        'yesterday'           { $$ = _date_node(0,0,-1,0,0,0); } |
+        ('today' | 'now')     { $$ = _date_node(0,0, 0,0,0,0); } ;
 
 prefix: 'last' { $$.i=-1; } | 'next' { $$.i=1; }; // What would  'first' and 'now' mean?
 
-daymonth: 'monday'    { $$ = _node(0,0,1,0,0,0); } |
-          'tuesday'   { $$ = _node(0,0,2,0,0,0); } |
-          'wednesday' { $$ = _node(0,0,3,0,0,0); } |
-          'thursday'  { $$ = _node(0,0,4,0,0,0); } |
-          'friday'    { $$ = _node(0,0,5,0,0,0); } |
-          'saturday'  { $$ = _node(0,0,6,0,0,0); } |
-          'sunday'    { $$ = _node(0,0,7,0,0,0); } |
-          'january'   { $$ = _node(0,1,0,0,0,0); } |
-          'february'  { $$ = _node(0,2,0,0,0,0); } |
-          'march'     { $$ = _node(0,3,0,0,0,0); } |
-          'april'     { $$ = _node(0,4,0,0,0,0); } |
-          'may'       { $$ = _node(0,5,0,0,0,0); } |
-          'june'      { $$ = _node(0,6,0,0,0,0); } |
-          'july'      { $$ = _node(0,7,0,0,0,0); } |
-          'august'    { $$ = _node(0,8,0,0,0,0); } |
-          'september' { $$ = _node(0,9,0,0,0,0); } |
-          'october'   { $$ = _node(0,10,0,0,0,0); } |
-          'november'  { $$ = _node(0,11,0,0,0,0); } |
-          'december'  { $$ = _node(0,12,0,0,0,0); } ;
+daymonth: 'monday'    { $$ = _date_node(0,0,1,0,0,0); } |
+          'tuesday'   { $$ = _date_node(0,0,2,0,0,0); } |
+          'wednesday' { $$ = _date_node(0,0,3,0,0,0); } |
+          'thursday'  { $$ = _date_node(0,0,4,0,0,0); } |
+          'friday'    { $$ = _date_node(0,0,5,0,0,0); } |
+          'saturday'  { $$ = _date_node(0,0,6,0,0,0); } |
+          'sunday'    { $$ = _date_node(0,0,7,0,0,0); } |
+          'january'   { $$ = _date_node(0,1,0,0,0,0); } |
+          'february'  { $$ = _date_node(0,2,0,0,0,0); } |
+          'march'     { $$ = _date_node(0,3,0,0,0,0); } |
+          'april'     { $$ = _date_node(0,4,0,0,0,0); } |
+          'may'       { $$ = _date_node(0,5,0,0,0,0); } |
+          'june'      { $$ = _date_node(0,6,0,0,0,0); } |
+          'july'      { $$ = _date_node(0,7,0,0,0,0); } |
+          'august'    { $$ = _date_node(0,8,0,0,0,0); } |
+          'september' { $$ = _date_node(0,9,0,0,0,0); } |
+          'october'   { $$ = _date_node(0,10,0,0,0,0); } |
+          'november'  { $$ = _date_node(0,11,0,0,0,0); } |
+          'december'  { $$ = _date_node(0,12,0,0,0,0); } ;
 
 rel_daymonth: prefix daymonth {
             $$=$1;
@@ -285,14 +280,14 @@ rel_daymonth: prefix daymonth {
             $$.sec  *= $0.i;
         };
 
-rel_spec: 'year' { $$ = _node(1,0,0,0,0,0); } |
-         'month' { $$ = _node(0,1,0,0,0,0); } |
-         'week'  { $$ = _node(0,0,7,0,0,0); } |
-         'day'   { $$ = _node(0,0,1,0,0,0); } |
-         'hour'  { $$ = _node(0,0,0,1,0,0); } |
-         'min'   { $$ = _node(0,0,0,0,1,0); } |
-         'sec'   { $$ = _node(0,0,0,0,0,1); } ;
-//         's'     { $$ = _node(0,0,0,0,0,1); } ;
+rel_spec: 'year' { $$ = _date_node(1,0,0,0,0,0); } |
+         'month' { $$ = _date_node(0,1,0,0,0,0); } |
+         'week'  { $$ = _date_node(0,0,7,0,0,0); } |
+         'day'   { $$ = _date_node(0,0,1,0,0,0); } |
+         'hour'  { $$ = _date_node(0,0,0,1,0,0); } |
+         'min'   { $$ = _date_node(0,0,0,0,1,0); } |
+         'sec'   { $$ = _date_node(0,0,0,0,0,1); } ;
+//         's'     { $$ = _date_node(0,0,0,0,0,1); } ;
 
 int_or_prefix: int { $$.i=$0.i; } | prefix { $$.i=$0.i; };
 

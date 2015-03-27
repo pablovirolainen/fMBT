@@ -130,82 +130,66 @@ extern int date_node_size;
 #include "dparse.h"
 
 extern "C" {
-extern D_ParserTables parser_tables_date;
+  extern D_ParserTables parser_tables_date;
 }
 
 extern int d_verbose_level;
 
+#include "date_node.h"
+
+// We are leaking GTimeZone?
+
 End_condition_duration::End_condition_duration
 (Conf* _conf,Verdict::Verdict v, const std::string& p):
-    End_condition(_conf,DURATION,v,p) {
-    er="time limit reached";
-    status=true;
-    param_time = -1;
+  End_condition(_conf,DURATION,v,p) {
+  er="time limit reached";
+  status=true;
+  param_time = -1;
 
-    D_Parser *parser = new_D_Parser(&parser_tables_date, date_node_size);
-    parser->save_parse_tree=true;
-    D_ParseNode *node=dparse(parser,(char*)p.c_str(),std::strlen(p.c_str()));
-    GTimeVal tv;
-    if (!node) {
-       status=false;
-       errormsg="Something wrong with date '"+p+"'";
-      return;
-    }
-    if (g_date_time_to_timeval((GDateTime *)(node->user),&tv)) {
-       param_time = tv.tv_sec;
-       param_long = tv.tv_usec;
-       struct timeval ttv;
-       gettime(&ttv);
-       _conf->log.debug("Until %i,current %i",param_time,ttv.tv_sec);
-    } else {
-       status=false;
-       errormsg="Something wrong with date '"+p+"'";
-    }
+  D_Parser *parser = new_D_Parser(&parser_tables_date, date_node_size);
+  parser->save_parse_tree=true;
+  D_ParseNode *node=dparse(parser,(char*)p.c_str(),std::strlen(p.c_str()));
+  GTimeVal tv;
 
-    /*
-#ifndef DROI
-    char* out = NULL;
-    int stat;
-    std::string ss = "date --date='" + param + "' +%s.%N";
-
-    if (g_spawn_command_line_sync(ss.c_str(), &out, NULL, &stat, NULL)) {
-      if (!stat) {
-	// Store seconds to param_time and microseconds to param_long
-	param_time = atoi(out);
-	param_long = (strtod(out, NULL) - param_time) * 1000000;
-	status = true;
-	if (_conf) {
-	  struct timeval tv;
-	  gettime(&tv);
-	  _conf->log.debug("Until %i,current %i",param_time,tv.tv_sec);
-	}
-      } else {
-	errormsg = "Parsing 'duration' parameter '" + param + "' failed.";
-	errormsg += " Date returned an error when executing '" + ss + "'";
-	status = false;
-      }
-    } else {
-      errormsg = "Parsing 'duration' parameter '" + param + "' failed, could not execute '";
-      errormsg += ss + "'";
-      status = false;
-    }
-    if (out) {
-      g_free(out);
-    }
-#else
-    char* endp;
-    long r = strtol(param.c_str(), &endp, 10);
-    if (*endp == 0) { 
-     param_time = r;
-      status = true;
-    } else {
-      // Error on str?
-      errormsg = "Parsing duration '" + param + "' failed.";
-      status = false;
-    }
-#endif
-    */
+  if (!node) {
+    status=false;
+    errormsg="Something wrong with date '"+p+"'";
+    return;
   }
+
+  date_node* unode = (date_node*) &node->user;
+
+  if (parser->syntax_errors) {
+    parser->free_node_fn(node);
+    status=false;
+    errormsg="Something wrong with date '"+p+"'";
+    return;
+  }
+
+  if (unode->date) {
+    if (g_date_time_to_timeval(unode->date,&tv)) {
+      param_time = tv.tv_sec;
+      param_long = tv.tv_usec;
+      struct timeval ttv;
+      gettime(&ttv);
+      _conf->log.debug("Until %i,current %i",param_time,ttv.tv_sec);
+    } else {
+      status=false;
+      errormsg="Something wrong with date '"+p+"'";
+    }
+    g_date_time_unref(unode->date);
+  } else {
+    status=false;
+    errormsg="Something wrong with date '"+p+"'";
+  }
+
+  if (unode->zone) {
+    g_time_zone_unref(unode->zone);
+  }
+
+  free_D_ParseNode(parser,node);
+  free_D_Parser(parser);
+}
 
 
 End_condition_coverage::End_condition_coverage(Conf* _conf,Verdict::Verdict v, const std::string& p):
