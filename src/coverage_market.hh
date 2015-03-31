@@ -261,12 +261,6 @@ public:
 
     virtual void reset()
     {
-      if (!child->status) {
-	m->status=child->status;
-	m->errormsg=child->errormsg;
-	return;
-      }
-
       child->set_model(m->get_model());
 
       if (!child->status) {
