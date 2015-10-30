@@ -291,17 +291,17 @@ tag: 'tag' tstr {
             guard=abg_stack.top();abg_stack.pop();
         };
 
-tstr:   string          {
-            if (obj->check_name($0.str,$n0.start_loc.pathname,$n0.start_loc.line)) {
-                raise_name_error($n0.start_loc,(Parser*)_parser,$0.str);
+tstr:   comment* string comment* {
+            if (obj->check_name($1.str,$n1.start_loc.pathname,$n1.start_loc.line)) {
+                raise_name_error($n1.start_loc,(Parser*)_parser,$1.str);
             }
-            obj->set_tagname($0.str,true);
+            obj->set_tagname($1.str,true);
         } |
-        tstr ',' string {
-            if (obj->check_name($2.str,$n2.start_loc.pathname,$n2.start_loc.line)) {
-                raise_name_error($n2.start_loc,(Parser*)_parser,$2.str);
+        tstr ',' comment* string comment* {
+            if (obj->check_name($3.str,$n3.start_loc.pathname,$n3.start_loc.line)) {
+                raise_name_error($n3.start_loc,(Parser*)_parser,$3.str);
             }
-            obj->set_tagname($2.str);
+            obj->set_tagname($3.str);
         } ;
 
 push: 'push' opt_parentheses '{' bstr '}' {
