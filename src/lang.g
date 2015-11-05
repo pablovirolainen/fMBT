@@ -174,7 +174,7 @@ header:
         }
         (variables | ainit | aexit | istate | push | pop | comment)+ ;
 
-aal_body: ( ( act | tag | parser ) (act | tag | parser | header )* )? ;
+aal_body: ( ( act | tag | parser | args ) (act | tag | parser | header | args )* )? ;
 
 
 params: { $$.params = NULL; } | '(' paramlist ')' { $$.params=$1.params; } ;
@@ -382,3 +382,19 @@ string: "\"([^\"\\]|\\[^])*\"" { $$.str = new std::string($n0.start_loc.s+1,$n0.
 pstring: "[a-zA-Z]+" {
             $$.str = new std::string($n0.start_loc.s,$n0.end-$n0.start_loc.s);
         };
+
+
+arg_input_names: comment* string comment*
+    |  arg_input_names ',' comment* string comment* ;
+
+typename: string | ;
+
+arg_spec: typename string ':' '{' bstr '}' ;
+
+arg_guard: 'guard' opt_parentheses '{' bstr '}' | ;
+
+
+args: 'args' arg_input_names '{'
+        arg_spec*
+        arg_guard
+        '}' ;
