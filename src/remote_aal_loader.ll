@@ -100,8 +100,8 @@ void generate_lts(int initial_state,int depth)
       for(int i=1;i<spnames.size();i++) {
         t << "\"" << spnames[i] << "\" : ";
 	bool c;
-	for(std::set<int>::iterator j=props[i].begin();
-	    j!=props[i].end();j++) {
+	for(std::set<int>::iterator j=props[i-1].begin();
+	    j!=props[i-1].end();j++) {
 	  if (c) {
 	    t << " ";
 	  }
