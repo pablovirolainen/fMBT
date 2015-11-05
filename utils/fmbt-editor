@@ -96,6 +96,9 @@ AAL_INPUTREI  = re.compile('{\s*"[^"]*"\s*tupni')
 AAL_OUTPUTRE  = re.compile('output\s"[^"]*"\s*{')
 AAL_OUTPUTREI = re.compile('{\s*"[^"]*"\s*tuptuo')
 
+AAL_ARGSRE   = re.compile('args\s"[^{]*"\s*{')
+AAL_ARGSREI  = re.compile('{\s*"[^"]*"\s*tupni')
+
 AAL_TAGRE     = re.compile('tag\s"[^{]*"\s*{')
 AAL_TAGREI    = re.compile('{\s*"[^"]*"\s*gat')
 
@@ -126,7 +129,7 @@ AAL_KEYWORDS = sorted([
     "aal", "language", "variables",
     "initial_state", "adapter_init", "adapter_exit",
     "serial", "parallel",
-    "input","output","action", "tag",
+    "input","output","action", "tag", "args",
     "guard", "body", "adapter"])
 
 PYTHON_KEYWORDS = [
@@ -2003,7 +2006,7 @@ on_inconc = exit(2)
             for name, regexp in [
                     ("aal", AAL_AALREI),("input", AAL_INPUTREI),
                     ("output", AAL_OUTPUTREI), ("action", AAL_ACTIONREI),
-                    ("tag", AAL_TAGREI), ("serial", AAL_SERIALREI),
+                    ("tag", AAL_TAGREI), ("serial", AAL_SERIALREI), ("args", AAL_ARGSREI),
                     ("parallel", AAL_PARALLELREI), ("guard", AAL_GUARDREI),
                     ("body", AAL_BODYREI), ("adapter", AAL_ADAPTERREI),
                     ("adapter_init", AAL_ADAPTERINITREI),
@@ -2081,6 +2084,7 @@ on_inconc = exit(2)
                            ('adapter {\n    \n}', 1, 0)],
                 'tag': [('guard { return }', 0, 1),
                         ('adapter {}', 0, 1)],
+                'args': [('guard { return }', 0, 1),],
                 'guard': [],
                 'body' : [],
                 'adapter' : [],
